@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chang Tongxun — Architecture Designer</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --clr-bg:      #f5f3f0;
+      --clr-surface:  #ffffff;
+      --clr-text:     #1a1a1a;
+      --clr-muted:    #6b6b6b;
+      --clr-accent:   #b08d57;
+      --clr-dark:     #1a1a1a;
+      --font-sans:    'Helvetica Neue', Arial, 'Noto Sans TC', sans-serif;
+      --font-serif:   'Georgia', 'Noto Serif TC', serif;
+      --max-w:        1200px;
+      --transition:   .35s cubic-bezier(.25,.8,.25,1);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--clr-bg);
+      color: var(--clr-text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Navigation ── */
+    nav {
+      position: fixed; top: 0; left: 0; width: 100%;
+      z-index: 100;
+      background: rgba(245,243,240,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(0,0,0,.06);
+      transition: var(--transition);
+    }
+    .nav-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 0 2rem;
+      height: 72px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo {
+      font-size: 1.1rem; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--clr-text); text-decoration: none;
+    }
+    .nav-logo span { color: var(--clr-accent); }
+    .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+    .nav-links a {
+      text-decoration: none; color: var(--clr-muted);
+      font-size: .85rem; letter-spacing: .06em; text-transform: uppercase;
+      position: relative; transition: color var(--transition);
+    }
+    .nav-links a::after {
+      content: ''; position: absolute; bottom: -4px; left: 0;
+      width: 0; height: 1.5px; background: var(--clr-accent);
+      transition: width var(--transition);
+    }
+    .nav-links a:hover { color: var(--clr-text); }
+    .nav-links a:hover::after { width: 100%; }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 2rem;
+      background:
+        linear-gradient(180deg, rgba(245,243,240,0) 60%, var(--clr-bg) 100%),
+        linear-gradient(135deg, #e8e4de 0%, #d4cdc3 100%);
+    }
+    .hero-content { max-width: 720px; }
+    .hero-subtitle {
+      font-size: .85rem; letter-spacing: .25em; text-transform: uppercase;
+      color: var(--clr-accent); margin-bottom: 1.5rem; font-weight: 500;
+    }
+    .hero h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(2.8rem, 6vw, 5rem);
+      font-weight: 400; line-height: 1.15;
+      margin-bottom: 1.5rem;
+    }
+    .hero p {
+      font-size: 1.1rem; color: var(--clr-muted);
+      max-width: 520px; margin: 0 auto 2.5rem;
+    }
+    .hero-cta {
+      display: inline-block; padding: .9rem 2.8rem;
+      border: 1.5px solid var(--clr-text); color: var(--clr-text);
+      text-decoration: none; font-size: .85rem; letter-spacing: .12em;
+      text-transform: uppercase; transition: var(--transition);
+    }
+    .hero-cta:hover {
+      background: var(--clr-text); color: var(--clr-bg);
+    }
+
+    /* ── Section Shared ── */
+    section { padding: 7rem 2rem; }
+    .section-header {
+      text-align: center; margin-bottom: 4rem;
+    }
+    .section-header .label {
+      font-size: .78rem; letter-spacing: .25em; text-transform: uppercase;
+      color: var(--clr-accent); margin-bottom: .75rem;
+    }
+    .section-header h2 {
+      font-family: var(--font-serif);
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 400;
+    }
+
+    /* ── About ── */
+    .about { background: var(--clr-surface); }
+    .about-grid {
+      max-width: var(--max-w); margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
+      align-items: center;
+    }
+    .about-image {
+      aspect-ratio: 3/4; background: linear-gradient(135deg, #d4cdc3, #b8b0a4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 4rem; color: rgba(255,255,255,.5);
+      border-radius: 2px;
+    }
+    .about-text h3 {
+      font-family: var(--font-serif);
+      font-size: 1.6rem; font-weight: 400; margin-bottom: 1.5rem;
+    }
+    .about-text p {
+      color: var(--clr-muted); margin-bottom: 1.2rem; font-size: .98rem;
+    }
+    .stats {
+      display: flex; gap: 3rem; margin-top: 2.5rem;
+      padding-top: 2rem; border-top: 1px solid rgba(0,0,0,.08);
+    }
+    .stat-number {
+      font-family: var(--font-serif);
+      font-size: 2.2rem; color: var(--clr-accent); display: block;
+    }
+    .stat-label {
+      font-size: .78rem; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--clr-muted);
+    }
+
+    /* ── Works ── */
+    .works { background: var(--clr-bg); }
+    .works-grid {
+      max-width: var(--max-w); margin: 0 auto;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 2rem;
+    }
+    .work-card {
+      position: relative; overflow: hidden;
+      background: var(--clr-surface);
+      border-radius: 2px;
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+    .work-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.08);
+    }
+    .work-thumb {
+      aspect-ratio: 4/3; overflow: hidden;
+    }
+    .work-thumb-inner {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.5rem; color: rgba(255,255,255,.6);
+      transition: transform var(--transition);
+    }
+    .work-card:hover .work-thumb-inner { transform: scale(1.05); }
+    .work-info { padding: 1.8rem; }
+    .work-category {
+      font-size: .72rem; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--clr-accent); margin-bottom: .5rem;
+    }
+    .work-info h3 {
+      font-family: var(--font-serif);
+      font-size: 1.25rem; font-weight: 400; margin-bottom: .5rem;
+    }
+    .work-info p {
+      font-size: .88rem; color: var(--clr-muted);
+    }
+
+    /* ── Contact ── */
+    .contact { background: var(--clr-dark); color: #fff; }
+    .contact .section-header h2 { color: #fff; }
+    .contact .label { color: var(--clr-accent); }
+    .contact-inner {
+      max-width: 680px; margin: 0 auto; text-align: center;
+    }
+    .contact-inner > p {
+      color: rgba(255,255,255,.55); margin-bottom: 3rem; font-size: 1.05rem;
+    }
+    .contact-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
+      margin-bottom: 3rem;
+    }
+    .contact-item { text-align: center; }
+    .contact-icon {
+      width: 48px; height: 48px; margin: 0 auto 1rem;
+      border: 1.5px solid rgba(255,255,255,.15); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      transition: var(--transition);
+    }
+    .contact-item:hover .contact-icon {
+      border-color: var(--clr-accent); background: var(--clr-accent);
+    }
+    .contact-item h4 {
+      font-size: .75rem; letter-spacing: .15em; text-transform: uppercase;
+      color: rgba(255,255,255,.4); margin-bottom: .4rem; font-weight: 400;
+    }
+    .contact-item a, .contact-item span {
+      color: #fff; text-decoration: none; font-size: .95rem;
+      transition: color var(--transition);
+    }
+    .contact-item a:hover { color: var(--clr-accent); }
+    .contact-form {
+      display: flex; gap: 1rem; max-width: 480px; margin: 0 auto;
+    }
+    .contact-form input {
+      flex: 1; padding: .9rem 1.2rem;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+      color: #fff; font-size: .92rem; font-family: var(--font-sans);
+      outline: none; transition: border-color var(--transition);
+    }
+    .contact-form input::placeholder { color: rgba(255,255,255,.3); }
+    .contact-form input:focus { border-color: var(--clr-accent); }
+    .contact-form button {
+      padding: .9rem 2rem; background: var(--clr-accent);
+      border: none; color: #fff; font-size: .82rem;
+      letter-spacing: .12em; text-transform: uppercase;
+      font-family: var(--font-sans); cursor: pointer;
+      transition: background var(--transition);
+    }
+    .contact-form button:hover { background: #9a7a48; }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--clr-dark);
+      border-top: 1px solid rgba(255,255,255,.06);
+      padding: 2rem; text-align: center;
+      font-size: .8rem; color: rgba(255,255,255,.3);
+      letter-spacing: .05em;
+    }
+
+    /* ── Mobile Menu ── */
+    .menu-toggle {
+      display: none; background: none; border: none;
+      cursor: pointer; padding: .5rem;
+    }
+    .menu-toggle span {
+      display: block; width: 22px; height: 1.5px;
+      background: var(--clr-text); margin: 5px 0;
+      transition: var(--transition);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .menu-toggle { display: block; }
+      .nav-links {
+        position: fixed; top: 72px; left: 0; width: 100%;
+        background: rgba(245,243,240,.97); backdrop-filter: blur(12px);
+        flex-direction: column; align-items: center;
+        padding: 2rem 0; gap: 1.5rem;
+        transform: translateY(-120%);
+        transition: transform var(--transition);
+      }
+      .nav-links.open { transform: translateY(0); }
+      .about-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+      .works-grid { grid-template-columns: 1fr; }
+      .contact-grid { grid-template-columns: 1fr; }
+      .contact-form { flex-direction: column; }
+      .stats { gap: 2rem; }
+      .hero h1 { font-size: 2.4rem; }
+    }
+
+    /* ── Scroll Animations ── */
+    .fade-up {
+      opacity: 0; transform: translateY(30px);
+      transition: opacity .8s ease, transform .8s ease;
+    }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">Chang<span>.</span></a>
+      <button class="menu-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="#about">關於我</a></li>
+        <li><a href="#works">作品集</a></li>
+        <li><a href="#contact">聯絡</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <p class="hero-subtitle">Architecture Designer</p>
+      <h1>Chang Tongxun</h1>
+      <p>以空間為語言，構築人與環境之間的詩意對話。專注於永續設計、極簡美學與功能性的完美平衡。</p>
+      <a href="#works" class="hero-cta">探索作品</a>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section class="about" id="about">
+    <div class="about-grid">
+      <div class="about-image fade-up">&#9635;</div>
+      <div class="about-text fade-up">
+        <h3>設計，是對生活的深刻理解</h3>
+        <p>
+          我是 Chang Tongxun，一位專注於建築與空間設計的設計師。
+          我相信優秀的建築不僅是結構的展現，更是人文精神與自然環境的融合。
+        </p>
+        <p>
+          多年來，我參與了住宅、商業空間與公共建築等多元類型的項目，
+          致力於在每個設計中融入在地文化與永續理念，
+          創造具有溫度且經得起時間考驗的空間。
+        </p>
+        <div class="stats">
+          <div>
+            <span class="stat-number">8+</span>
+            <span class="stat-label">年經驗</span>
+          </div>
+          <div>
+            <span class="stat-number">50+</span>
+            <span class="stat-label">完成項目</span>
+          </div>
+          <div>
+            <span class="stat-number">12</span>
+            <span class="stat-label">設計獎項</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Works -->
+  <section class="works" id="works">
+    <div class="section-header">
+      <p class="label">Portfolio</p>
+      <h2>精選作品</h2>
+    </div>
+    <div class="works-grid">
+
+      <div class="work-card fade-up">
+        <div class="work-thumb">
+          <div class="work-thumb-inner" style="background:linear-gradient(135deg,#8a9b6e,#5c6e4f)">&#9878;</div>
+        </div>
+        <div class="work-info">
+          <p class="work-category">住宅設計</p>
+          <h3>山居雲舍</h3>
+          <p>隱於山林間的現代住宅，以大面積開窗框取自然風景，實現室內外空間的無縫銜接。</p>
+        </div>
+      </div>
+
+      <div class="work-card fade-up">
+        <div class="work-thumb">
+          <div class="work-thumb-inner" style="background:linear-gradient(135deg,#7a8b9e,#4a5d72)">&#9962;</div>
+        </div>
+        <div class="work-info">
+          <p class="work-category">商業空間</p>
+          <h3>光合藝廊</h3>
+          <p>以光影為主題的藝術展覽空間，透過天窗與反射材質的運用，營造流動的光影體驗。</p>
+        </div>
+      </div>
+
+      <div class="work-card fade-up">
+        <div class="work-thumb">
+          <div class="work-thumb-inner" style="background:linear-gradient(135deg,#b09070,#8a6e52)">&#9963;</div>
+        </div>
+        <div class="work-info">
+          <p class="work-category">公共建築</p>
+          <h3>水岸文化中心</h3>
+          <p>位於河畔的文化複合體，以流線型設計回應水域地景，成為城市的文化新地標。</p>
+        </div>
+      </div>
+
+      <div class="work-card fade-up">
+        <div class="work-thumb">
+          <div class="work-thumb-inner" style="background:linear-gradient(135deg,#9e8a7a,#72605a)">&#9961;</div>
+        </div>
+        <div class="work-info">
+          <p class="work-category">室內設計</p>
+          <h3>靜巷茶室</h3>
+          <p>融合東方禪意與現代極簡的茶道空間，以天然素材與留白手法，創造靜謐的品茗體驗。</p>
+        </div>
+      </div>
+
+      <div class="work-card fade-up">
+        <div class="work-thumb">
+          <div class="work-thumb-inner" style="background:linear-gradient(135deg,#6e8a7a,#4a6e5a)">&#9968;</div>
+        </div>
+        <div class="work-info">
+          <p class="work-category">永續設計</p>
+          <h3>綠穹生態辦公室</h3>
+          <p>獲得綠建築認證的辦公空間，結合垂直綠化、雨水回收與自然通風系統。</p>
+        </div>
+      </div>
+
+      <div class="work-card fade-up">
+        <div class="work-thumb">
+          <div class="work-thumb-inner" style="background:linear-gradient(135deg,#a08878,#7a6258)">&#9970;</div>
+        </div>
+        <div class="work-info">
+          <p class="work-category">都市規劃</p>
+          <h3>新城街區再生計畫</h3>
+          <p>老舊街區的活化再生提案，保留歷史紋理的同時注入當代活力與公共開放空間。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section class="contact" id="contact">
+    <div class="section-header">
+      <p class="label">Contact</p>
+      <h2>與我聯繫</h2>
+    </div>
+    <div class="contact-inner">
+      <p>如果您對建築設計有任何想法或合作需求，歡迎與我聯繫。</p>
+      <div class="contact-grid">
+        <div class="contact-item">
+          <div class="contact-icon">&#9993;</div>
+          <h4>Email</h4>
+          <a href="mailto:hello@changtongxun.com">hello@changtongxun.com</a>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon">&#9742;</div>
+          <h4>電話</h4>
+          <span>+886 912 345 678</span>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon">&#9873;</div>
+          <h4>地點</h4>
+          <span>台北，台灣</span>
+        </div>
+      </div>
+      <form class="contact-form" onsubmit="event.preventDefault(); alert('感謝您的來信，我會盡快回覆！');">
+        <input type="email" placeholder="請輸入您的 Email" required>
+        <button type="submit">訂閱通知</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    &copy; 2026 Chang Tongxun. All rights reserved.
+  </footer>
+
+  <!-- Scroll Animation -->
+  <script>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+    // Close mobile menu on link click
+    document.querySelectorAll('.nav-links a').forEach(link => {
+      link.addEventListener('click', () => {
+        document.querySelector('.nav-links').classList.remove('open');
+      });
+    });
+  </script>
+
+</body>
+</html>
