@@ -121,14 +121,16 @@ export class FightScene extends Phaser.Scene implements CombatScene {
       objects.push(this.add.image(w / 2, h / 2, 'bg-gradient').setDepth(-20));
     }
 
-    // 地面:純色 + 地平線亮條
-    const groundH = h - stage.horizonY;
-    objects.push(
-      this.add
-        .rectangle(w / 2, stage.horizonY + groundH / 2, w, groundH, stage.groundColor)
-        .setDepth(-10),
-      this.add.rectangle(w / 2, stage.horizonY + 4, w, 8, stage.groundEdgeColor).setDepth(-9),
-    );
+    // 地面:純色 + 地平線亮條(背景圖自帶地面時不疊)
+    if (stage.drawGround) {
+      const groundH = h - stage.horizonY;
+      objects.push(
+        this.add
+          .rectangle(w / 2, stage.horizonY + groundH / 2, w, groundH, stage.groundColor)
+          .setDepth(-10),
+        this.add.rectangle(w / 2, stage.horizonY + 4, w, 8, stage.groundEdgeColor).setDepth(-9),
+      );
+    }
     return objects;
   }
 

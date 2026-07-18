@@ -64,6 +64,7 @@ const DEFAULT_ANIMATIONS: Record<AnimationName, AnimationDef> = {
 
 export interface StageDef {
   backgroundImage: string | null; // 放圖檔路徑(相對 public/assets/)即可取代漸層背景
+  drawGround: boolean;            // 是否疊上純色地面(背景圖自帶地面時設 false)
   gradientTop: string;            // 漸層背景上方顏色
   gradientBottom: string;         // 漸層背景下方顏色
   groundColor: number;            // 地面顏色
@@ -86,7 +87,7 @@ export const ASSETS = {
       frameHeight: 256,
       scale: 0.52,        // 站姿實高 184px → 184 × 0.52 ≈ 96(= bodyHeight)
       footOffset: 29,     // 站姿腳底距幀底 29px(用 --report 量出)
-      bodyWidth: 64,
+      bodyWidth: 48,      // 依實測人形寬:站姿 bbox 90px × 0.52 ≈ 47
       bodyHeight: 96,
       placeholderColor: 0x3b82f6, // 玩家:藍色
       animations: { ...DEFAULT_ANIMATIONS },
@@ -99,7 +100,7 @@ export const ASSETS = {
       frameHeight: 256,
       scale: 0.54,       // 站姿實高 179px → 179 × 0.54 ≈ 97
       footOffset: 30,
-      bodyWidth: 64,
+      bodyWidth: 48,     // 依實測人形寬:站姿 bbox 89px × 0.54 ≈ 48
       bodyHeight: 96,
       placeholderColor: 0xef4444, // 敵人:紅色
       animations: { ...DEFAULT_ANIMATIONS },
@@ -107,7 +108,10 @@ export const ASSETS = {
   },
 
   stage: {
-    backgroundImage: null,
+    // 台北天台夜景(原圖 2172×724,置中裁 16:9 後縮至 960×540,
+    // 天台鋪面約從 y≈390 開始,與 balance.arena 的地面帶對齊)
+    backgroundImage: 'stage-bg.png',
+    drawGround: false, // 背景圖自帶天台地面,不疊純色地面
     gradientTop: '#1b2947',
     gradientBottom: '#8a97c4',
     groundColor: 0x46424e,
