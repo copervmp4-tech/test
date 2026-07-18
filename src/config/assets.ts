@@ -62,10 +62,11 @@ const DEFAULT_ANIMATIONS: Record<AnimationName, AnimationDef> = {
   block:     { start: 12, end: 12, frameRate: 1,  repeat: -1 },
 };
 
+/** 場地外觀定義(場地清單在 config/stages.ts) */
 export interface StageDef {
   backgroundImage: string | null; // 放圖檔路徑(相對 public/assets/)即可取代漸層背景
   drawGround: boolean;            // 是否疊上純色地面(背景圖自帶地面時設 false)
-  gradientTop: string;            // 漸層背景上方顏色
+  gradientTop: string;            // 漸層背景上方顏色(也是選場地預覽卡的顏色)
   gradientBottom: string;         // 漸層背景下方顏色
   groundColor: number;            // 地面顏色
   groundEdgeColor: number;        // 地面邊緣(地平線)亮色條
@@ -107,15 +108,8 @@ export const ASSETS = {
     } as FighterSpriteDef,
   },
 
-  stage: {
-    // 台北天台夜景(原圖 2172×724,置中裁 16:9 後縮至 960×540,
-    // 天台鋪面約從 y≈390 開始,與 balance.arena 的地面帶對齊)
-    backgroundImage: 'stage-bg.png',
-    drawGround: false, // 背景圖自帶天台地面,不疊純色地面
-    gradientTop: '#1b2947',
-    gradientBottom: '#8a97c4',
-    groundColor: 0x46424e,
-    groundEdgeColor: 0x5c5768,
-    horizonY: 370,
-  } as StageDef,
+  ui: {
+    /** 標題畫面主視覺圖(相對 public/assets/),null = 用深色漸層 placeholder */
+    titleBackgroundImage: null as string | null,
+  },
 };

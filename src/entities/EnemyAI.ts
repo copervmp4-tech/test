@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { ASSETS } from '../config/assets';
+import { FighterSpriteDef } from '../config/assets';
 import { BALANCE } from '../config/balance';
-import { Fighter, FighterInput, NEUTRAL_INPUT } from './Fighter';
+import { Fighter, FighterInput, FighterStats, NEUTRAL_INPUT } from './Fighter';
 
 type AiMode = 'chase' | 'combo' | 'block' | 'retreat';
 
@@ -16,8 +16,8 @@ export class EnemyAI extends Fighter {
   private cooldown = BALANCE.ai.openingDelay;
   private plannedHits = 1;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, ASSETS.fighters.enemy, -1);
+  constructor(scene: Phaser.Scene, x: number, y: number, def: FighterSpriteDef, stats: FighterStats) {
+    super(scene, x, y, def, -1, stats);
   }
 
   /** 產生這一幀的輸入,交給 Fighter.update 執行 */

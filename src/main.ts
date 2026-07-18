@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
+import { CharSelectScene } from './scenes/CharSelectScene';
 import { FightScene } from './scenes/FightScene';
+import { ModeSelectScene } from './scenes/ModeSelectScene';
+import { StageSelectScene } from './scenes/StageSelectScene';
+import { TitleScene } from './scenes/TitleScene';
 
 new Phaser.Game({
   type: Phaser.AUTO,
@@ -16,5 +20,5 @@ new Phaser.Game({
     activePointers: 4, // 多點觸控:搖桿 + 多顆按鈕同時按
   },
   disableContextMenu: true,
-  scene: [BootScene, FightScene],
+  scene: [BootScene, TitleScene, ModeSelectScene, CharSelectScene, StageSelectScene, FightScene],
 });

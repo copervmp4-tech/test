@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
-import { ASSETS } from '../config/assets';
+import { FighterSpriteDef } from '../config/assets';
 import { ActionButtons } from '../ui/ActionButtons';
 import { VirtualJoystick } from '../ui/VirtualJoystick';
-import { Fighter, FighterInput } from './Fighter';
+import { Fighter, FighterInput, FighterStats } from './Fighter';
 
 /** 玩家:合併「鍵盤(方向鍵 + Z/X/C)」與「觸控(搖桿 + 按鈕)」輸入 */
 export class Player extends Fighter {
@@ -13,10 +13,12 @@ export class Player extends Fighter {
     scene: Phaser.Scene,
     x: number,
     y: number,
+    def: FighterSpriteDef,
+    stats: FighterStats,
     private joystick: VirtualJoystick,
     private buttons: ActionButtons,
   ) {
-    super(scene, x, y, ASSETS.fighters.player, 1);
+    super(scene, x, y, def, 1, stats);
     const keyboard = scene.input.keyboard!;
     this.cursors = keyboard.createCursorKeys();
     this.keys = keyboard.addKeys('Z,X,C') as Player['keys'];

@@ -24,6 +24,19 @@ export const NEUTRAL_INPUT: FighterInput = {
   blockHeld: false,
 };
 
+/** 角色數值(config/characters.ts 提供;倍率作用在 balance.ts 的基礎值上) */
+export interface FighterStats {
+  maxHealth: number;
+  speedMultiplier: number;
+  damageMultiplier: number;
+}
+
+export const DEFAULT_STATS: FighterStats = {
+  maxHealth: BALANCE.maxHealth,
+  speedMultiplier: 1,
+  damageMultiplier: 1,
+};
+
 /** 戰鬥場景需提供的回呼(命中時做鏡頭震動等表現) */
 export interface CombatScene extends Phaser.Scene {
   onFighterHit(target: Fighter, blocked: boolean): void;
@@ -48,12 +61,13 @@ const PLACEHOLDER_POSES: Record<AnimationName, { sx: number; sy: number; light: 
  * 跳躍高度 heightY 只影響繪製與判定框,不改變 y。
  */
 export class Fighter extends Phaser.GameObjects.Container {
-  hp: number = BALANCE.maxHealth;
+  hp: number;
   facing: 1 | -1 = 1;
   fighterState: FighterState = 'idle';
   stateTime = 0;
 
   readonly def: FighterSpriteDef;
+  readonly stats: FighterStats;
 
   protected heightY = 0; // 離地高度(>= 0)
   protected vy = 0;      // 垂直速度(向上為正)
@@ -76,9 +90,18 @@ export class Fighter extends Phaser.GameObjects.Container {
 
   private poseColorCache = new Map<AnimationName, number>();
 
-  constructor(scene: Phaser.Scene, x: number, y: number, def: FighterSpriteDef, facing: 1 | -1 = 1) {
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    def: FighterSpriteDef,
+    facing: 1 | -1 = 1,
+    stats: FighterStats = DEFAULT_STATS,
+  ) {
     super(scene, x, y);
     this.def = def;
+    this.stats = stats;
+    this.hp = stats.maxHealth;
     this.facing = facing;
     this.usesSprite = !ASSETS.usePlaceholders && scene.textures.exists(def.key);
 
@@ -181,25 +204,25 @@ export class Fighter extends Phaser.GameObjects.Container {
     this.updateVisual();
   }
 
-  /** 承受一次攻擊(由攻擊方呼叫) */
-  takeHit(attack: AttackDef, attacker: Fighter): void {
+  /** 承受一次攻擊(由攻擊方呼叫;damage 已含攻擊方的傷害倍率) */
+  takeHit(attack: AttackDef, attacker: Fighter, damage: number = attack.damage): void {
     if (!this.canBeHit()) return;
 
     if (this.fighterState === 'block') {
       // 防禦:傷害減 80%,不硬直、不擊退
-      this.hp = Math.max(0, this.hp - attack.damage * BALANCE.blockDamageMultiplier);
+      this.hp = Math.max(0, this.hp - damage * BALANCE.blockDamageMultiplier);
       this.flashTimer = 0.06;
       return;
     }
 
-    this.hp = Math.max(0, this.hp - attack.damage);
+    this.hp = Math.max(0, this.hp - damage);
     this.flashTimer = BALANCE.hitFlashDuration;
     this.facing = attacker.x >= this.x ? 1 : -1; // 面向攻擊者
 
     const knockDir = this.x >= attacker.x ? 1 : -1;
     const knockdown =
       attack.causesKnockdown ||
-      attack.damage > BALANCE.knockdownDamageThreshold ||
+      damage > BALANCE.knockdownDamageThreshold ||
       this.hp <= 0;
 
     this.cancelAttack();
@@ -239,8 +262,8 @@ export class Fighter extends Phaser.GameObjects.Container {
 
     const mx = Phaser.Math.Clamp(input.moveX, -1, 1);
     const mz = Phaser.Math.Clamp(input.moveZ, -1, 1);
-    this.x += mx * BALANCE.walkSpeed * dt;
-    this.y += mz * BALANCE.zWalkSpeed * dt;
+    this.x += mx * BALANCE.walkSpeed * this.stats.speedMultiplier * dt;
+    this.y += mz * BALANCE.zWalkSpeed * this.stats.speedMultiplier * dt;
     if (mx !== 0) this.facing = mx > 0 ? 1 : -1; // 自動面向移動方向
 
     const moving = mx !== 0 || mz !== 0;
@@ -250,8 +273,8 @@ export class Fighter extends Phaser.GameObjects.Container {
 
   private updateJump(dt: number, input: FighterInput): void {
     // 空中保留操控
-    this.x += Phaser.Math.Clamp(input.moveX, -1, 1) * BALANCE.walkSpeed * dt;
-    this.y += Phaser.Math.Clamp(input.moveZ, -1, 1) * BALANCE.zWalkSpeed * dt;
+    this.x += Phaser.Math.Clamp(input.moveX, -1, 1) * BALANCE.walkSpeed * this.stats.speedMultiplier * dt;
+    this.y += Phaser.Math.Clamp(input.moveZ, -1, 1) * BALANCE.zWalkSpeed * this.stats.speedMultiplier * dt;
     this.applyGravity(dt);
     if (this.heightY <= 0 && this.vy <= 0) {
       this.changeState('idle', 'idle');
@@ -302,7 +325,7 @@ export class Fighter extends Phaser.GameObjects.Container {
       ) {
         this.attackHasHit = true;
         const blocked = opponent.fighterState === 'block';
-        opponent.takeHit(atk, this);
+        opponent.takeHit(atk, this, atk.damage * this.stats.damageMultiplier);
         (this.scene as CombatScene).onFighterHit(opponent, blocked);
       }
     } else {

@@ -1,10 +1,12 @@
 import Phaser from 'phaser';
 import { ASSETS } from '../config/assets';
+import { CHARACTERS } from '../config/characters';
+import { STAGES } from '../config/stages';
 
 /**
- * 載入資源並註冊動畫。
- * 色塊模式(usePlaceholders = true)下沒有圖檔要載,直接進戰鬥場景;
- * 換上正式 sprite sheet 後,這裡會依 assets.ts 的設定載圖並建立所有動畫。
+ * 載入資源並註冊動畫,完成後進標題畫面。
+ * 色塊模式(usePlaceholders = true)下角色不載圖;
+ * 場地背景圖、角色頭像、標題主視覺依 config 有設定才載。
  */
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -12,17 +14,24 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
-    if (ASSETS.usePlaceholders) return;
-
     this.load.setPath(ASSETS.basePath);
-    for (const def of Object.values(ASSETS.fighters)) {
-      this.load.spritesheet(def.key, def.path, {
-        frameWidth: def.frameWidth,
-        frameHeight: def.frameHeight,
-      });
+
+    if (!ASSETS.usePlaceholders) {
+      for (const def of Object.values(ASSETS.fighters)) {
+        this.load.spritesheet(def.key, def.path, {
+          frameWidth: def.frameWidth,
+          frameHeight: def.frameHeight,
+        });
+      }
     }
-    if (ASSETS.stage.backgroundImage) {
-      this.load.image('stage-bg', ASSETS.stage.backgroundImage);
+    for (const stage of STAGES) {
+      if (stage.backgroundImage) this.load.image(`stage-${stage.id}`, stage.backgroundImage);
+    }
+    for (const char of CHARACTERS) {
+      if (char.portraitPath) this.load.image(`portrait-${char.id}`, char.portraitPath);
+    }
+    if (ASSETS.ui.titleBackgroundImage) {
+      this.load.image('title-bg', ASSETS.ui.titleBackgroundImage);
     }
   }
 
@@ -41,6 +50,6 @@ export class BootScene extends Phaser.Scene {
         }
       }
     }
-    this.scene.start('FightScene');
+    this.scene.start('TitleScene');
   }
 }
