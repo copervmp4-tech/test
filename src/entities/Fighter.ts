@@ -88,6 +88,7 @@ export class Fighter extends Phaser.GameObjects.Container {
     if (this.usesSprite) {
       const sprite = new Phaser.GameObjects.Sprite(scene, 0, 0, def.key);
       sprite.setOrigin(0.5, 1);
+      sprite.setScale(def.scale); // 素材幀縮放到遊戲內身高(貼齊 bodyHeight)
       this.bodyObj = sprite;
     } else {
       this.bodyObj = new Phaser.GameObjects.Rectangle(
@@ -384,10 +385,14 @@ export class Fighter extends Phaser.GameObjects.Container {
     const airY = -this.heightY;
     const anim = this.currentAnim ?? 'idle';
 
-    // 走路時輕微上下晃動
+    // 走路晃動只給色塊模式(正式動畫自己會動);
+    // sprite 模式要補償幀底部留白,讓腳貼在地面上
     const bob =
-      this.fighterState === 'walk' ? Math.sin(this.scene.time.now / 1000 * 14) * 1.8 : 0;
-    this.bodyObj.setPosition(0, airY + bob);
+      !this.usesSprite && this.fighterState === 'walk'
+        ? Math.sin(this.scene.time.now / 1000 * 14) * 1.8
+        : 0;
+    const footY = this.usesSprite ? this.def.footOffset * this.def.scale : 0;
+    this.bodyObj.setPosition(0, airY + bob + footY);
 
     // 影子留在地面,跳越高越淡
     const airRatio = Phaser.Math.Clamp(this.heightY / 300, 0, 1);
