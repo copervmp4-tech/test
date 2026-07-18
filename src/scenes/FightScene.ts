@@ -1,14 +1,18 @@
 import Phaser from 'phaser';
 import { ASSETS } from '../config/assets';
+import { BALANCE } from '../config/balance';
 import { CHARACTERS, getCharacter } from '../config/characters';
 import { GameState } from '../config/gameState';
+import { MoveDef, getMoves } from '../config/moves';
 import { StageEntry, getStage } from '../config/stages';
 import { EnemyAI } from '../entities/EnemyAI';
-import { CombatScene, Fighter, NEUTRAL_INPUT } from '../entities/Fighter';
+import { CombatScene, Fighter, HitInfo, NEUTRAL_INPUT } from '../entities/Fighter';
 import { Player } from '../entities/Player';
+import { Projectile } from '../entities/Projectile';
 import { ActionButtons } from '../ui/ActionButtons';
 import { HealthBar } from '../ui/HealthBar';
-import { ensureGradientTexture, fadeInScene, makeButton, textStyle } from '../ui/theme';
+import { MpBar } from '../ui/MpBar';
+import { ensureGradientTexture, fadeInScene, makeButton, textStyle, THEME } from '../ui/theme';
 import { VirtualJoystick } from '../ui/VirtualJoystick';
 
 /**
@@ -23,7 +27,10 @@ export class FightScene extends Phaser.Scene implements CombatScene {
   private buttons!: ActionButtons;
   private playerBar!: HealthBar;
   private enemyBar!: HealthBar;
+  private playerMp!: MpBar;
+  private enemyMp!: MpBar;
   private uiCamera!: Phaser.Cameras.Scene2D.Camera;
+  private projectiles: Projectile[] = [];
   private ended = false;
   private resultShown = false;
 
@@ -35,6 +42,7 @@ export class FightScene extends Phaser.Scene implements CombatScene {
     fadeInScene(this);
     this.ended = false;
     this.resultShown = false;
+    this.projectiles = [];
     const w = this.scale.width;
     const h = this.scale.height;
 
@@ -49,24 +57,31 @@ export class FightScene extends Phaser.Scene implements CombatScene {
     this.joystick = new VirtualJoystick(this);
     this.buttons = new ActionButtons(this);
 
-    // ── 角色 ──
+    // ── 角色(帶入招式表與被動)──
     this.player = new Player(
       this, w * 0.32, 470,
       ASSETS.fighters[playerChar.fighterKey], playerChar.stats,
+      getMoves(playerChar.id), playerChar.passive,
       this.joystick, this.buttons,
     );
     this.enemy = new EnemyAI(
       this, w * 0.68, 470,
       ASSETS.fighters[enemyChar.fighterKey], enemyChar.stats,
+      getMoves(enemyChar.id), enemyChar.passive,
     );
     worldObjects.push(this.player, this.enemy);
 
-    // ── 血條(顯示角色名,長度上限對應各自血量)──
-    this.playerBar = new HealthBar(this, 24, 26, 380, playerChar.stats.maxHealth, false, playerChar.name, ASSETS.ui.hpBarPlayer);
-    this.enemyBar = new HealthBar(this, w - 24, 26, 380, enemyChar.stats.maxHealth, true, enemyChar.name, ASSETS.ui.hpBarEnemy);
+    // ── 血條 + MP 氣力條(顯示角色名,長度上限對應各自血量)──
+    this.playerBar = new HealthBar(this, 24, 24, 380, playerChar.stats.maxHealth, false, playerChar.name, ASSETS.ui.hpBarPlayer);
+    this.enemyBar = new HealthBar(this, w - 24, 24, 380, enemyChar.stats.maxHealth, true, enemyChar.name, ASSETS.ui.hpBarEnemy);
+    const tenth = BALANCE.passive.tenthBeat.threshold;
+    const pThreshold = playerChar.passive === 'tenthBeat' ? tenth : 0;
+    const eThreshold = enemyChar.passive === 'tenthBeat' ? tenth : 0;
+    this.playerMp = new MpBar(this, 24, 66, 300, false, pThreshold);
+    this.enemyMp = new MpBar(this, w - 24, 66, 300, true, eThreshold);
 
     const hint = this.add
-      .text(w / 2, h - 14, '鍵盤:方向鍵移動 / Z 攻擊 / X 跳躍 / C 防禦', {
+      .text(w / 2, h - 14, '鍵盤:方向鍵 / Z 攻擊 / X 跳 / C 防禦   招式:防禦→方向→攻擊或跳', {
         ...textStyle(13, '#ffffff', false),
       })
       .setOrigin(0.5, 1)
@@ -78,6 +93,8 @@ export class FightScene extends Phaser.Scene implements CombatScene {
       ...this.buttons.displayObjects,
       ...this.playerBar.displayObjects,
       ...this.enemyBar.displayObjects,
+      ...this.playerMp.displayObjects,
+      ...this.enemyMp.displayObjects,
       hint,
     ];
 
@@ -95,10 +112,23 @@ export class FightScene extends Phaser.Scene implements CombatScene {
     this.player.update(dt, playerInput, this.enemy);
     this.enemy.update(dt, enemyInput, this.player);
 
+    // 投射物(對到另一方)
+    for (const p of this.projectiles) {
+      const target = p.owner === this.player ? this.enemy : this.player;
+      p.update(dt, target);
+    }
+    this.projectiles = this.projectiles.filter((p) => p.alive);
+
     this.playerBar.setValue(this.player.hp);
     this.enemyBar.setValue(this.enemy.hp);
     this.playerBar.update(dt);
     this.enemyBar.update(dt);
+    this.playerMp.setValue(this.player.mp, this.player.maxMp);
+    this.enemyMp.setValue(this.enemy.mp, this.enemy.maxMp);
+    this.playerMp.setCharge(this.player.getCharge());
+    this.enemyMp.setCharge(this.enemy.getCharge());
+    this.playerMp.update();
+    this.enemyMp.update();
 
     if (!this.ended && (!this.player.isAlive() || !this.enemy.isAlive())) {
       this.ended = true;
@@ -109,6 +139,30 @@ export class FightScene extends Phaser.Scene implements CombatScene {
   /** 命中回呼:鏡頭微震(被擋下就不震) */
   onFighterHit(_target: Fighter, blocked: boolean): void {
     if (!blocked) this.cameras.main.shake(90, 0.0045);
+  }
+
+  /** 第十拍閃避回呼:在角色位置畫一圈快速擴散的青色環 */
+  onFighterDodge(fighter: Fighter): void {
+    const ring = this.add.circle(fighter.x, fighter.y - 48, 12, THEME.colors.accent, 0)
+      .setStrokeStyle(3, 0x7fe3ff, 0.9)
+      .setDepth(fighter.y + 2);
+    this.uiCamera.ignore(ring);
+    this.tweens.add({
+      targets: ring,
+      scale: 3.2,
+      alpha: 0,
+      duration: 320,
+      ease: 'Cubic.easeOut',
+      onComplete: () => ring.destroy(),
+    });
+  }
+
+  /** 招式回呼:生成投射物,並讓 UI 攝影機忽略它(只由主攝影機拍) */
+  spawnProjectile(owner: Fighter, move: MoveDef, hit: HitInfo): void {
+    const startX = owner.x + owner.facing * (owner.def.bodyWidth / 2 + 6);
+    const p = new Projectile(this, owner, move, hit, startX, owner.y, owner.facing);
+    this.uiCamera.ignore(p.displayObjects);
+    this.projectiles.push(p);
   }
 
   // ───────────────────────── 場地 ─────────────────────────

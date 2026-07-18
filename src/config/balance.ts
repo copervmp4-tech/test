@@ -37,6 +37,28 @@ export const BALANCE = {
   // ── 防禦 ──
   blockDamageMultiplier: 0.2, // 防禦中受擊傷害 ×0.2(減 80%)
 
+  // ── MP 氣力(招式消耗,隨時間回復)──
+  mp: {
+    max: 100,
+    start: 50,        // 開場氣力
+    regenPerSec: 12,  // 每秒自動回復
+  },
+
+  // ── 招式指令輸入 ──
+  command: {
+    window: 0.5,      // 指令序列需在此秒數內完成
+    dirDeadzone: 0.5, // 搖桿方向要超過此值才算一次方向輸入
+  },
+
+  // ── 被動:第十拍(僅特定角色)──
+  passive: {
+    tenthBeat: {
+      threshold: 9,       // 累積九層後,下一次普攻自動閃避
+      dodgeInvuln: 0.45,  // 閃避後無敵時間
+      backdashSpeed: 400, // 閃避後退初速
+    },
+  },
+
   // ── 受擊 / 擊倒 ──
   hitStun: 0.3,                  // 受擊硬直
   hitFlashDuration: 0.12,        // 受擊變白時間

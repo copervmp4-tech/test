@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { FighterSpriteDef } from '../config/assets';
 import { BALANCE } from '../config/balance';
+import { MoveDef, PassiveId } from '../config/moves';
 import { Fighter, FighterInput, FighterStats, NEUTRAL_INPUT } from './Fighter';
 
 type AiMode = 'chase' | 'combo' | 'block' | 'retreat';
@@ -8,6 +9,7 @@ type AiMode = 'chase' | 'combo' | 'block' | 'retreat';
 /**
  * 簡單 AI:朝玩家走近,進入攻擊範圍後
  * 60% 攻擊(隨機 1~3 段連擊)、20% 防禦、20% 後退。
+ * 若角色有招式且 MP 足夠,攻擊時有機率改用招式。
  * 被擊倒後的起身由 Fighter 基類處理。
  */
 export class EnemyAI extends Fighter {
@@ -16,8 +18,16 @@ export class EnemyAI extends Fighter {
   private cooldown = BALANCE.ai.openingDelay;
   private plannedHits = 1;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, def: FighterSpriteDef, stats: FighterStats) {
-    super(scene, x, y, def, -1, stats);
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    def: FighterSpriteDef,
+    stats: FighterStats,
+    moves: MoveDef[] = [],
+    passiveId: PassiveId | null = null,
+  ) {
+    super(scene, x, y, def, -1, stats, moves, passiveId);
   }
 
   /** 產生這一幀的輸入,交給 Fighter.update 執行 */
@@ -32,10 +42,21 @@ export class EnemyAI extends Fighter {
     this.cooldown -= dt;
     this.modeTimer -= dt;
 
+    // 招式執行中:交給 Fighter 跑完,這幀不下其他指令
+    if (this.fighterState === 'special') return input;
+
     // 被打斷(受擊/擊倒)時放棄目前行為
     if ((this.fighterState === 'hit' || this.fighterState === 'knockdown') && this.mode !== 'chase') {
       this.mode = 'chase';
       this.cooldown = ai.decisionInterval;
+    }
+
+    // 對手在空中且自己有對空招 → 有機率放逆空倒掛
+    if (target.canBeHit() && this.mode === 'chase' && this.cooldown <= 0) {
+      if (this.tryContextualSpecial(dx, dz, target)) {
+        this.cooldown = ai.decisionInterval;
+        return input;
+      }
     }
 
     switch (this.mode) {
@@ -92,5 +113,23 @@ export class EnemyAI extends Fighter {
   private backToChase(): void {
     this.mode = 'chase';
     this.cooldown = BALANCE.ai.decisionInterval;
+  }
+
+  /** 依情境挑一招(對空 / 中距離牽制 / 接近);成功發動回傳 true */
+  private tryContextualSpecial(dx: number, dz: number, target: Fighter): boolean {
+    if (this.moves.length === 0) return false;
+    const adx = Math.abs(dx);
+    if (Math.abs(dz) > BALANCE.zTolerance) return false;
+
+    if (target.isAirborne() && adx < 130) {
+      return Math.random() < 0.7 && this.tryStartMove('bicycle-kick'); // 對空
+    }
+    if (adx > 160 && adx < 430) {
+      return Math.random() < 0.4 && this.tryStartMove('arc-shot');     // 中距離牽制
+    }
+    if (adx > 90 && adx < 200) {
+      return Math.random() < 0.22 && this.tryStartMove('slide-tackle'); // 接近
+    }
+    return false;
   }
 }
