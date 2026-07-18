@@ -1,0 +1,71 @@
+/**
+ * 數值設定檔:血量、傷害、速度、攻擊範圍、AI 行為機率都在這裡調。
+ * 時間單位:秒;距離單位:像素;速度:像素/秒。
+ */
+
+/** 單段攻擊的參數 */
+export interface AttackDef {
+  damage: number;          // 傷害
+  windup: number;          // 前搖(出手前)
+  active: number;          // 判定持續時間(hitbox 存在的時間窗)
+  recovery: number;        // 後搖(收招)
+  range: number;           // hitbox 往前延伸的距離
+  height: number;          // hitbox 高度
+  knockback: number;       // 擊退初速度
+  lunge: number;           // 出招時向前小衝的距離
+  causesKnockdown: boolean; // 命中是否直接擊倒(第三段)
+}
+
+export const BALANCE = {
+  maxHealth: 100,
+
+  // ── 移動 ──
+  walkSpeed: 200,   // 左右走路速度
+  zWalkSpeed: 130,  // 淺景深上下走位速度
+
+  // ── 跳躍(參考 LF2:偏高、偏飄)──
+  jumpVelocity: 640, // 起跳初速度(往上)
+  gravity: 1350,     // 重力加速度(數字越小越飄)
+
+  // ── 三連擊 ──
+  attacks: [
+    { damage: 8,  windup: 0.10, active: 0.12, recovery: 0.16, range: 62, height: 54, knockback: 130, lunge: 6,  causesKnockdown: false },
+    { damage: 8,  windup: 0.09, active: 0.12, recovery: 0.18, range: 66, height: 54, knockback: 150, lunge: 10, causesKnockdown: false },
+    { damage: 15, windup: 0.14, active: 0.14, recovery: 0.32, range: 74, height: 58, knockback: 300, lunge: 22, causesKnockdown: true },
+  ] as AttackDef[],
+
+  // ── 防禦 ──
+  blockDamageMultiplier: 0.2, // 防禦中受擊傷害 ×0.2(減 80%)
+
+  // ── 受擊 / 擊倒 ──
+  hitStun: 0.3,                  // 受擊硬直
+  hitFlashDuration: 0.12,        // 受擊變白時間
+  knockdownDamageThreshold: 25,  // 單次損血超過此值 → 擊倒
+  knockdownDuration: 1.0,        // 倒地時間
+  knockdownPopVelocity: 240,     // 被擊倒時彈起的初速度
+  riseInvulnDuration: 0.5,       // 起身無敵時間
+  knockbackDamping: 5,           // 擊退速度衰減(越大停得越快)
+
+  // ── 淺景深(LF2 式 Z 軸)──
+  zTolerance: 30, // 攻擊判定允許的深度差
+
+  // ── 場地邊界 ──
+  arena: {
+    wallLeft: 48,     // 左牆(角色中心最小 x)
+    wallRight: 912,   // 右牆
+    floorTop: 392,    // 地面帶上緣(腳的最小 y,越小越深)
+    floorBottom: 524, // 地面帶下緣
+  },
+
+  // ── 敵人 AI ──
+  ai: {
+    attackChance: 0.6,      // 進入攻擊範圍後:60% 攻擊
+    blockChance: 0.2,       // 20% 防禦
+    retreatChance: 0.2,     // 20% 後退
+    decisionInterval: 0.55, // 兩次決策間隔
+    attackRange: 100,       // 視為「進入攻擊範圍」的中心距離
+    blockDuration: 0.6,     // 防禦持續時間
+    retreatDuration: 0.45,  // 後退持續時間
+    openingDelay: 1.0,      // 開場緩衝(先不出手)
+  },
+};
