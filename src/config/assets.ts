@@ -37,8 +37,9 @@ export interface FighterSpriteDef {
   frameHeight: number;      // sprite sheet 單幀高
   scale: number;            // 顯示縮放:讓角色顯示身高貼齊 bodyHeight
   footOffset: number;       // 幀底部留白(px,原圖尺寸):腳底到幀底邊的距離
-  bodyWidth: number;        // 碰撞/受擊判定的身體寬(與美術幀尺寸可不同)
-  bodyHeight: number;       // 碰撞/受擊判定的身體高
+  bodyWidth: number;        // 受擊判定的身體寬(依站姿實測人形寬)
+  bodyHeight: number;       // 受擊判定的身體高
+  punchReach: number;       // 出拳時拳頭尖端距角色中心的距離(顯示 px,依出拳幀實測)
   placeholderColor: number; // 色塊模式的顏色
   animations: Record<AnimationName, AnimationDef>;
 }
@@ -80,30 +81,61 @@ export const ASSETS = {
   /** 素材根目錄(對應 public/assets/) */
   basePath: 'assets/',
 
+  // 四位角色的 sprite sheet(數值皆用 tools/prepare_spritesheet.py --report 實測)
   fighters: {
-    player: {
-      key: 'player',
-      path: 'player.png', // 藍衣男生(tools/prepare_spritesheet.py 去背後的輸出)
+    tonni: {
+      key: 'tonni',
+      path: 'tonni.png', // 功夫裝男生
       frameWidth: 256,
       frameHeight: 256,
-      scale: 0.52,        // 站姿實高 184px → 184 × 0.52 ≈ 96(= bodyHeight)
-      footOffset: 29,     // 站姿腳底距幀底 29px(用 --report 量出)
-      bodyWidth: 48,      // 依實測人形寬:站姿 bbox 90px × 0.52 ≈ 47
+      scale: 0.52,       // 站姿實高 184px → ×0.52 ≈ 96
+      footOffset: 29,
+      bodyWidth: 44,     // 站姿 bbox 90px × 0.52,再內縮少許
       bodyHeight: 96,
-      placeholderColor: 0x3b82f6, // 玩家:藍色
+      punchReach: 42,    // 出拳幀拳尖 81px × 0.52
+      placeholderColor: 0x3b82f6,
       animations: { ...DEFAULT_ANIMATIONS },
     } as FighterSpriteDef,
 
-    enemy: {
-      key: 'enemy',
-      path: 'enemy.png', // 灰衣女生
+    hanah: {
+      key: 'hanah',
+      path: 'hanah.png', // 灰衣女生
       frameWidth: 256,
       frameHeight: 256,
-      scale: 0.54,       // 站姿實高 179px → 179 × 0.54 ≈ 97
+      scale: 0.54,       // 站姿實高 179px → ×0.54 ≈ 97
       footOffset: 30,
-      bodyWidth: 48,     // 依實測人形寬:站姿 bbox 89px × 0.54 ≈ 48
+      bodyWidth: 44,
       bodyHeight: 96,
-      placeholderColor: 0xef4444, // 敵人:紅色
+      punchReach: 44,    // 81px × 0.54
+      placeholderColor: 0x3fae5a,
+      animations: { ...DEFAULT_ANIMATIONS },
+    } as FighterSpriteDef,
+
+    daru: {
+      key: 'daru',
+      path: 'daru.png', // 黑白衣胖胖
+      frameWidth: 256,
+      frameHeight: 256,
+      scale: 0.5,        // 站姿實高 196px → ×0.5 = 98(體格較壯)
+      footOffset: 29,
+      bodyWidth: 48,     // 站姿 bbox 100px × 0.5
+      bodyHeight: 98,
+      punchReach: 52,    // 104px × 0.5,手長
+      placeholderColor: 0xd94040,
+      animations: { ...DEFAULT_ANIMATIONS },
+    } as FighterSpriteDef,
+
+    yama: {
+      key: 'yama',
+      path: 'yama.png', // 沒穿上衣的男生
+      frameWidth: 256,
+      frameHeight: 256,
+      scale: 0.52,       // 站姿實高 184px → ×0.52 ≈ 96
+      footOffset: 31,
+      bodyWidth: 44,
+      bodyHeight: 96,
+      punchReach: 42,    // 80px × 0.52
+      placeholderColor: 0xe8c33a,
       animations: { ...DEFAULT_ANIMATIONS },
     } as FighterSpriteDef,
   },
@@ -111,5 +143,13 @@ export const ASSETS = {
   ui: {
     /** 標題畫面主視覺圖(相對 public/assets/),null = 用深色漸層 placeholder */
     titleBackgroundImage: null as string | null,
+    /** 戰鬥 UI 素材(tools/slice_ui_kit.py 的輸出);設為 null 即回退程式繪製 */
+    hpBarPlayer: 'ui/hpbar-blue.png' as string | null,
+    hpBarEnemy: 'ui/hpbar-red.png' as string | null,
+    joystickBase: 'ui/joystick-base.png' as string | null,
+    joystickThumb: 'ui/joystick-thumb.png' as string | null,
+    btnAttack: 'ui/btn-attack.png' as string | null,
+    btnJump: 'ui/btn-jump.png' as string | null,
+    btnBlock: 'ui/btn-block.png' as string | null,
   },
 };

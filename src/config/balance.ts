@@ -9,7 +9,7 @@ export interface AttackDef {
   windup: number;          // 前搖(出手前)
   active: number;          // 判定持續時間(hitbox 存在的時間窗)
   recovery: number;        // 後搖(收招)
-  range: number;           // hitbox 往前延伸的距離
+  reachBonus: number;      // 額外距離:hitbox 尖端 = 角色實測拳長(assets 的 punchReach)+ 此值
   height: number;          // hitbox 高度
   knockback: number;       // 擊退初速度
   lunge: number;           // 出招時向前小衝的距離
@@ -27,11 +27,11 @@ export const BALANCE = {
   jumpVelocity: 640, // 起跳初速度(往上)
   gravity: 1350,     // 重力加速度(數字越小越飄)
 
-  // ── 三連擊 ──
+  // ── 三連擊(攻擊距離貼合美術:拳尖 = punchReach + reachBonus)──
   attacks: [
-    { damage: 8,  windup: 0.10, active: 0.12, recovery: 0.16, range: 62, height: 54, knockback: 130, lunge: 6,  causesKnockdown: false },
-    { damage: 8,  windup: 0.09, active: 0.12, recovery: 0.18, range: 66, height: 54, knockback: 150, lunge: 10, causesKnockdown: false },
-    { damage: 15, windup: 0.14, active: 0.14, recovery: 0.32, range: 74, height: 58, knockback: 300, lunge: 22, causesKnockdown: true },
+    { damage: 8,  windup: 0.10, active: 0.12, recovery: 0.16, reachBonus: 2,  height: 54, knockback: 130, lunge: 6,  causesKnockdown: false },
+    { damage: 8,  windup: 0.09, active: 0.12, recovery: 0.18, reachBonus: 5,  height: 54, knockback: 150, lunge: 10, causesKnockdown: false },
+    { damage: 15, windup: 0.14, active: 0.14, recovery: 0.32, reachBonus: 10, height: 58, knockback: 300, lunge: 22, causesKnockdown: true },
   ] as AttackDef[],
 
   // ── 防禦 ──
@@ -63,7 +63,7 @@ export const BALANCE = {
     blockChance: 0.2,       // 20% 防禦
     retreatChance: 0.2,     // 20% 後退
     decisionInterval: 0.55, // 兩次決策間隔
-    attackRange: 100,       // 視為「進入攻擊範圍」的中心距離
+    attackRange: 78,        // 視為「進入攻擊範圍」的中心距離(貼合實際拳長)
     blockDuration: 0.6,     // 防禦持續時間
     retreatDuration: 0.45,  // 後退持續時間
     openingDelay: 1.0,      // 開場緩衝(先不出手)

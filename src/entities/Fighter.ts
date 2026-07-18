@@ -380,10 +380,12 @@ export class Fighter extends Phaser.GameObjects.Container {
   // ───────────────────────── 判定框 ─────────────────────────
 
   private computeHitbox(atk: AttackDef): Phaser.Geom.Rectangle {
-    const edgeX = this.x + this.facing * (this.def.bodyWidth / 2 - 8);
-    const left = this.facing > 0 ? edgeX : edgeX - atk.range;
+    // 從身體前緣稍內側開始,延伸到「實測拳頭尖端 + 少量加成」,貼合美術
+    const start = this.def.bodyWidth / 2 - 6;
+    const tip = this.def.punchReach + atk.reachBonus;
     const top = this.y - this.heightY - this.def.bodyHeight * 0.78;
-    return new Phaser.Geom.Rectangle(left, top, atk.range, atk.height);
+    const left = this.facing > 0 ? this.x + start : this.x - tip;
+    return new Phaser.Geom.Rectangle(left, top, tip - start, atk.height);
   }
 
   private syncAttackViz(hitbox: Phaser.Geom.Rectangle): void {

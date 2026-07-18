@@ -33,6 +33,14 @@ export class BootScene extends Phaser.Scene {
     if (ASSETS.ui.titleBackgroundImage) {
       this.load.image('title-bg', ASSETS.ui.titleBackgroundImage);
     }
+    // 戰鬥 UI 素材(血條 / 搖桿 / 按鈕),用檔名當貼圖 key
+    for (const path of [
+      ASSETS.ui.hpBarPlayer, ASSETS.ui.hpBarEnemy,
+      ASSETS.ui.joystickBase, ASSETS.ui.joystickThumb,
+      ASSETS.ui.btnAttack, ASSETS.ui.btnJump, ASSETS.ui.btnBlock,
+    ]) {
+      if (path) this.load.image(path, path);
+    }
   }
 
   create(): void {

@@ -7,19 +7,36 @@
  * 先跑 npm run build 再執行:node tools/build-singlefile.mjs
  */
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { join, relative } from 'node:path';
 
 const bundleName = readdirSync('dist/assets').find((f) => f.endsWith('.js'));
 if (!bundleName) throw new Error('dist/assets 裡沒有 JS bundle,先跑 npm run build');
 let js = readFileSync(`dist/assets/${bundleName}`, 'utf8');
 
-for (const file of readdirSync('public/assets')) {
-  if (!file.endsWith('.png')) continue;
-  const quoted = JSON.stringify(file);
-  if (!js.includes(quoted)) continue;
-  const b64 = readFileSync(`public/assets/${file}`).toString('base64');
-  js = js.replaceAll(quoted, JSON.stringify(`data:image/png;base64,${b64}`));
-  console.log(`inlined ${file} (${Math.round(b64.length / 1024)} KB base64)`);
+// 遞迴收集 public/assets 下所有 .png(含 ui/ 子資料夾)
+const ROOT = 'public/assets';
+function walk(dir) {
+  const out = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...walk(full));
+    else if (entry.name.endsWith('.png')) out.push(full);
+  }
+  return out;
 }
+
+let total = 0;
+for (const full of walk(ROOT)) {
+  // 程式引用時用的是相對 assets 根目錄的路徑(如 'ui/hpbar-blue.png'、'tonni.png')
+  const relPath = relative(ROOT, full).split('\\').join('/');
+  const quoted = JSON.stringify(relPath);
+  if (!js.includes(quoted)) continue; // 沒被引用的素材(原始檔等)略過
+  const b64 = readFileSync(full).toString('base64');
+  js = js.replaceAll(quoted, JSON.stringify(`data:image/png;base64,${b64}`));
+  total += b64.length;
+  console.log(`inlined ${relPath} (${Math.round(b64.length / 1024)} KB base64)`);
+}
+console.log(`total inlined ~${Math.round(total / 1024 / 1024 * 10) / 10} MB base64`);
 
 // 避免 JS 內容提早關閉 <script> 標籤
 js = js.replaceAll('</script', '<\\/script');

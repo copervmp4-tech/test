@@ -26,10 +26,11 @@ export const STAGES: StageEntry[] = [
   {
     id: 'street',
     name: '街道夜晚',
-    backgroundImage: null,
-    drawGround: true,
-    gradientTop: '#0c1230',
-    gradientBottom: '#27407a',
+    // 夜市老街(原圖置中裁 16:9 縮至 960×540,石板地與地面帶對齊)
+    backgroundImage: 'stage-street.png',
+    drawGround: false,
+    gradientTop: '#141a33',
+    gradientBottom: '#3a2a3a',
     groundColor: 0x232a3d,
     groundEdgeColor: 0x39445e,
     horizonY: 370,
@@ -37,10 +38,11 @@ export const STAGES: StageEntry[] = [
   {
     id: 'dojo',
     name: '道場白天',
-    backgroundImage: null,
-    drawGround: true,
-    gradientTop: '#e8dcc0',
-    gradientBottom: '#c9b68f',
+    // 武術道場(木地板與地面帶對齊)
+    backgroundImage: 'stage-dojo.png',
+    drawGround: false,
+    gradientTop: '#d8cdb5',
+    gradientBottom: '#8a7355',
     groundColor: 0x8a6f4d,
     groundEdgeColor: 0xa08258,
     horizonY: 370,

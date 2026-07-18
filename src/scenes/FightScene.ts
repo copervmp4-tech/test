@@ -62,8 +62,8 @@ export class FightScene extends Phaser.Scene implements CombatScene {
     worldObjects.push(this.player, this.enemy);
 
     // ── 血條(顯示角色名,長度上限對應各自血量)──
-    this.playerBar = new HealthBar(this, 24, 26, 360, playerChar.stats.maxHealth, false, playerChar.name);
-    this.enemyBar = new HealthBar(this, w - 24, 26, 360, enemyChar.stats.maxHealth, true, enemyChar.name);
+    this.playerBar = new HealthBar(this, 24, 26, 380, playerChar.stats.maxHealth, false, playerChar.name, ASSETS.ui.hpBarPlayer);
+    this.enemyBar = new HealthBar(this, w - 24, 26, 380, enemyChar.stats.maxHealth, true, enemyChar.name, ASSETS.ui.hpBarEnemy);
 
     const hint = this.add
       .text(w / 2, h - 14, '鍵盤:方向鍵移動 / Z 攻擊 / X 跳躍 / C 防禦', {

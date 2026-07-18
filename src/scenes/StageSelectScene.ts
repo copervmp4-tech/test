@@ -66,18 +66,27 @@ export class StageSelectScene extends Phaser.Scene {
     };
     drawFrame(false);
 
-    // 預覽縮圖:程式繪製該場地的漸層 + 地面色條
-    const thumb = this.add.graphics();
-    const top = Phaser.Display.Color.HexStringToColor(def.gradientTop).color;
-    const bottom = Phaser.Display.Color.HexStringToColor(def.gradientBottom).color;
-    const tx = -thumbW / 2;
+    // 預覽縮圖:有背景圖用圖(縮放填滿),否則程式繪製漸層 + 地面色條
     const ty = -cardH / 2 + 12;
-    thumb.fillGradientStyle(top, top, bottom, bottom, 1);
-    thumb.fillRect(tx, ty, thumbW, thumbH - 26);
-    thumb.fillStyle(def.groundEdgeColor, 1);
-    thumb.fillRect(tx, ty + thumbH - 26, thumbW, 4);
-    thumb.fillStyle(def.groundColor, 1);
-    thumb.fillRect(tx, ty + thumbH - 22, thumbW, 22);
+    const imageKey = `stage-${def.id}`;
+    let thumb: Phaser.GameObjects.GameObject;
+    if (def.backgroundImage && this.textures.exists(imageKey)) {
+      const img = this.add.image(0, ty + thumbH / 2, imageKey).setDisplaySize(thumbW, thumbH);
+      img.setCrop(); // 顯示完整縮圖
+      thumb = img;
+    } else {
+      const g = this.add.graphics();
+      const top = Phaser.Display.Color.HexStringToColor(def.gradientTop).color;
+      const bottom = Phaser.Display.Color.HexStringToColor(def.gradientBottom).color;
+      const tx = -thumbW / 2;
+      g.fillGradientStyle(top, top, bottom, bottom, 1);
+      g.fillRect(tx, ty, thumbW, thumbH - 26);
+      g.fillStyle(def.groundEdgeColor, 1);
+      g.fillRect(tx, ty + thumbH - 26, thumbW, 4);
+      g.fillStyle(def.groundColor, 1);
+      g.fillRect(tx, ty + thumbH - 22, thumbW, 22);
+      thumb = g;
+    }
 
     const name = this.add.text(0, cardH / 2 - 34, def.name, textStyle(20)).setOrigin(0.5);
     container.add([frame, thumb, name]);

@@ -18,11 +18,12 @@ import numpy as np
 from PIL import Image
 
 
-def is_background(rgb: np.ndarray) -> np.ndarray:
-    """近白 / 淺灰(背景與格線):亮度高且彩度低"""
+def is_background(rgb: np.ndarray, min_brightness: int = 198) -> np.ndarray:
+    """近白 / 淺灰(背景與格線):亮度高且彩度低。
+    背景偏灰的圖(例如帶漸層的淺灰底)用 --min-bg 調低門檻。"""
     mn = rgb.min(axis=2).astype(np.int16)
     mx = rgb.max(axis=2).astype(np.int16)
-    return (mn >= 198) & ((mx - mn) < 30)
+    return (mn >= min_brightness) & ((mx - mn) < 30)
 
 
 def flood_from_edges(bg: np.ndarray) -> np.ndarray:
@@ -54,6 +55,9 @@ def main() -> None:
     cell = 256
     if '--cell' in sys.argv:
         cell = int(sys.argv[sys.argv.index('--cell') + 1])
+    min_bg = 198
+    if '--min-bg' in sys.argv:
+        min_bg = int(sys.argv[sys.argv.index('--min-bg') + 1])
     report = '--report' in sys.argv
     src, dst = args[0], args[1]
 
@@ -63,7 +67,7 @@ def main() -> None:
     h, w = arr.shape[:2]
     cols, rows = w // cell, h // cell
 
-    bg = is_background(rgb)
+    bg = is_background(rgb, min_bg)
     # 逐格處理:格線在格子邊界,從每格自己的邊緣起 flood,格與格互不影響
     for r in range(rows):
         for c in range(cols):
