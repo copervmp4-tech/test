@@ -100,8 +100,8 @@ const WIND_PUSH = 0.38;         // 陣風推力
 const JET_CYCLE = 190;          // 火焰噴射柱週期(熔岩關)
 const FREEZE_FRAMES = 90;       // 冰波凍結敵人時間
 const LAVA_CYCLE = 600;         // 兩段式熔岩:警告 → 第一段 → 二次警告 → 第二段
-const LAVA_LOW_SURFACE_Y = 216; // 第一段只淹到畫面底部一格半
-const LAVA_SURFACE_Y = 200;     // 第二段才升到危險高度
+const LAVA_LOW_OFFSET = 24;  // 第一段水面 = 地圖底 - 24(只淹最低一層地面)
+const LAVA_HIGH_OFFSET = 40; // 第二段水面 = 地圖底 - 40(一般地面也會淹,須上高台)
 const PLAYER_TIME_STOP_FRAMES = 150; // 時間王能力:玩家可自由行動的 2.5 秒停時
 const TIME_SURGE_WARN_FRAMES = 60;   // 賽道黃燈鎖定到紅燈停時：給足 1 秒尋找棚頂
 const CHRONO_STOP_WARN_FRAMES = 60;  // 時間王停時前的倒數預告
@@ -1196,9 +1196,11 @@ function lavaTideState(frame) {
   return 'calm';
 }
 
-function lavaSurfaceForState(state) {
-  if (state === 'high') return LAVA_SURFACE_Y;
-  if (state === 'low' || state === 'warnHigh') return LAVA_LOW_SURFACE_Y;
+// 水面高度以「地圖底部」為基準(世界座標),因此漲潮只影響關卡最低層——
+// 立體熔岩關往上爬即可脫離潮汐範圍。
+function lavaSurfaceForState(state, map) {
+  if (state === 'high') return map.heightPx - LAVA_HIGH_OFFSET;
+  if (state === 'low' || state === 'warnHigh') return map.heightPx - LAVA_LOW_OFFSET;
   return null;
 }
 
@@ -1368,6 +1370,9 @@ const TILE_PROPS = {
   'i': { spawn: 'lavaSpitter' },
   'j': { spawn: 'clockGuard' },
   '+': { pickup: 'full' },     // Boss 門前一次性大型回血
+  '*': { pickup: 'hp' },       // 沿途小回血(常駐)
+  'o': { pickup: 'ammo' },     // 武器彈藥(常駐)
+  'L': { pickup: 'life' },     // 1UP(藏在支線/危險處)
   'X': { spawn: 'boss' },
 };
 
@@ -1570,30 +1575,44 @@ function nudgeX(e, map, dx) {
 // 尖刺深淵，須沿引道梯子爬上高架快速道（帶輸送帶與時鐘守衛）再下橋。既保留競速手感、
 // 又加入垂直移動。所有跳躍已用可達性 BFS 驗證。
 function buildTimeCitadelMap() {
+  // 賽車關（CHRONO CIRCUIT）：關卡機關＝時間激流(紅燈剎停+輪胎突進,全域週期)＋
+  // 輸送帶賽道＋高架天橋。教學曲線：§1 空曠平地先體驗一次紅綠燈與輪胎(無敵人干擾)
+  // → §2 輸送帶節奏(順向暢快/逆向頂風,守衛單獨出現) → §3 立體天橋跨尖刺深淵
+  // (帶+守衛組合) → §4 總測驗:逆向帶+尖刺+守衛+紅燈同時管理 → Boss。
   const C = 192, R = 15; const g = Array.from({ length: R }, () => Array(C).fill('.'));
   const fill = (r, a, b, ch = '#') => { for (let c = a; c <= b; c++) g[r][c] = ch; };
   const lad = (c, a, b) => { for (let r = a; r <= b; r++) g[r][c] = 'H'; };
   const belt = (a, b, ch, r = 13) => { for (let c = a; c <= b; c++) g[r][c] = ch; };
   const floor = (a, b) => { fill(13, a, b); fill(14, a, b); };
   g[12][2] = 'P';
-  // ── 地面賽道前導（0..60）：輸送帶、高架滑行車、時鐘守衛 ──
-  floor(0, 60);
-  belt(14, 20, '>'); belt(31, 38, '<'); belt(48, 55, '>');
-  fill(8, 6, 13, '='); fill(8, 23, 30, '='); fill(8, 40, 47, '=');
-  for (const c of [9, 26, 43]) g[7][c] = 'T';       // 高架滑行車
-  g[12][18] = 'W'; g[12][35] = 'W'; g[12][52] = 'W'; g[12][28] = '^';
-  // ── 立體天橋（地面尖刺深淵 61..103；高架 61..106）──
-  fill(13, 61, 103, '^'); fill(14, 61, 103, '#');   // 賽道斷裂＝尖刺深淵
-  lad(60, 7, 12);                                    // 引道（底在實地 col60）
-  fill(8, 61, 106, '#');                             // 高架快速道
-  for (const [a, b, ch] of [[66, 73, '>'], [80, 88, '<'], [94, 101, '>']]) belt(a, b, ch, 8);
-  g[7][70] = 'W'; g[7][76] = 'T'; g[7][84] = 'T'; g[7][98] = 'W';
-  lad(106, 8, 12);                                   // 下橋引道（底在實地 col106）
-  floor(104, 176);                                   // 地面賽道恢復
-  // ── 地面賽道收尾（104..176）──
-  belt(112, 119, '>'); belt(130, 138, '<'); belt(150, 158, '>');
-  fill(8, 120, 127, '='); fill(8, 140, 147, '='); for (const c of [123, 144]) g[7][c] = 'T';
-  g[12][116] = 'W'; g[12][134] = 'W'; g[12][154] = 'W'; g[12][160] = '^'; g[12][168] = 'K';
+  // ── §1 起跑直線（0..44）：空曠平地讓第一次紅燈/輪胎單獨發生,再各自認識守衛 ──
+  floor(0, 44);
+  g[12][20] = 'W';                                   // 教學:單獨時鐘守衛
+  belt(26, 33, '>');                                 // 教學:順向帶(加速快感)
+  fill(8, 36, 41, '=');  g[7][38] = 'T';             // 教學:高架滑行車俯瞰
+  // ── §2 輸送帶節奏（45..88）──
+  belt(48, 55, '<');  g[12][52] = 'W';               // 逆向帶+守衛:頂風對峙
+  g[12][59] = '^';                                   // 單格尖刺:紅燈剎停點警示
+  belt(62, 69, '>');
+  fill(8, 71, 76, '='); g[7][73] = 'T'; g[7][75] = '*'; // 高台:打掉滑行車拿回血
+  belt(78, 85, '<');  g[12][82] = 'W';
+  g[12][87] = 'K';                                   // 檢查點一(上橋前)
+  // ── §3 立體天橋（89..131）：地面斷成尖刺深淵,高架帶橋通過 ──
+  fill(13, 89, 128, '^'); fill(14, 89, 128, '#');    // 賽道斷裂＝尖刺深淵
+  lad(88, 7, 12);                                    // 引道梯(底在實地 col88)
+  fill(8, 89, 131, '#');                             // 高架快速道
+  belt(92, 99, '>', 8); belt(106, 113, '<', 8); belt(120, 127, '>', 8);
+  g[7][96] = 'W'; g[7][103] = 'T'; g[7][110] = 'T'; g[7][124] = 'W';
+  g[7][130] = 'o';                                   // 橋尾彈藥
+  lad(131, 8, 12);                                   // 下橋引道
+  floor(129, 176);
+  // ── §4 總測驗（132..176）：逆向帶+尖刺+守衛+紅燈 ──
+  belt(136, 144, '<'); g[12][140] = 'W';
+  g[12][147] = '^'; g[12][148] = '^';
+  fill(8, 150, 155, '='); g[7][152] = 'T';
+  belt(158, 165, '>'); g[12][162] = 'W';
+  g[12][168] = '^';
+  g[12][171] = 'K'; g[12][173] = '+';                // 檢查點二+門前回血
   // ── Boss 門與決鬥房：只移除 Boss 的平台，Boss 直接站地面 ──
   floor(177, 191);
   for (let r = 0; r <= 9; r++) g[r][175] = '#';
@@ -1602,41 +1621,43 @@ function buildTimeCitadelMap() {
   return g.map((row) => row.join(''));
 }
 
-// 蝙蝠關（NEON CITY）：城市屋簷跳躍 ＋ 一段「必經的垂直摩天樓攀爬」。
-// 沿防火梯的梯子與外牆平台往上爬到尖塔、跨過高樓群、再下樓；樓與樓之間是街道深淵
-// （掉落即死）。所有跳躍都在玩家跳躍包絡內、已用可達性 BFS 驗證。
+// 蝙蝠關（NEON CITY）：關卡機關＝陣風(全域週期)＋輸送帶(> <)＋樓間深淵。
+// 元祖式教學曲線：§1 平地先各自認識輸送帶與雜兵 → §2 乾淨的屋頂跳躍(先無敵人、
+// 再加狙擊) → §3 輸送帶橋跨深淵(帶方向與風向對抗) → §4 防火梯攀塔(1UP 支線)
+// → §5 總測驗:風＋逆向輸送帶＋缺口＋雜兵同時出現。
 function buildNeonCityMap() {
   const C = 192, R = 15; const g = Array.from({ length: R }, () => Array(C).fill('.'));
   const fill = (r, a, b, ch = '#') => { for (let c = a; c <= b; c++) g[r][c] = ch; };
   const lad = (c, a, b) => { for (let r = a; r <= b; r++) g[r][c] = 'H'; };
   const bldg = (a, b, top) => { for (let r = top; r <= 14; r++) fill(r, a, b); };
-  // ── 屋頂前導（0..60）：高低平緩（起伏 1~2 格）、街道缺口 3 格 ──
-  bldg(0, 6, 10);  g[9][3] = 'P';
-  bldg(10, 15, 10); g[9][12] = 'W';
-  bldg(19, 24, 9);  g[8][22] = 'T';
-  bldg(28, 33, 10); g[9][31] = 'W';
-  bldg(37, 42, 9);  g[8][40] = 'T';
-  bldg(46, 51, 11); g[10][49] = 'W';
-  bldg(55, 60, 10); g[9][58] = 'T';
-  // ── 摩天樓攀爬（62..102）：梯子＋外牆平台爬到尖塔，跨樓，街道＝掉落即死 ──
-  bldg(62, 68, 12); g[11][64] = 'W';
-  lad(66, 4, 12);                              // 防火梯
-  fill(9, 62, 66, '='); g[8][63] = 'T';        // 外牆平台一
-  fill(6, 63, 67, '='); g[5][65] = 'W';        // 外牆平台二
-  fill(4, 62, 69, '#'); g[3][66] = 'T';        // 尖塔頂（梯子接到這）
-  fill(4, 73, 80, '#'); g[3][76] = 'W';        // 二號塔頂（跨街道 70..72）
-  lad(74, 4, 10);                              // 塔內下樓梯
-  fill(10, 73, 80, '#'); g[9][78] = 'T';       // 二號塔中層
-  bldg(84, 90, 11); g[10][87] = 'W';
-  bldg(94, 100, 12); g[11][97] = 'T';
-  // ── 屋頂收尾（104..160）：往下跨過中高樓群 ──
-  bldg(104, 110, 10); g[9][107] = 'T';
-  bldg(114, 119, 9);  g[8][116] = 'W';
-  bldg(123, 128, 11); g[10][126] = 'T';
-  bldg(132, 137, 10); g[9][135] = 'W';
-  bldg(141, 146, 11); g[10][144] = 'T';
-  bldg(150, 156, 10); g[9][153] = 'W';
-  bldg(160, 173, 12); g[11][166] = 'K';        // 隱藏檢查點
+  // ── §1 街道教學（0..38）：平地。單獨的走行兵 → 平地輸送帶(安全體驗) → 高台砲塔 ──
+  bldg(0, 38, 13); g[12][3] = 'P';
+  g[12][12] = 'W';                                   // 教學 1:單獨走行兵
+  fill(12, 18, 24, '>');                             // 教學 2:平地正向輸送帶(無風險)
+  fill(9, 30, 34, '='); g[8][32] = 'T';              // 教學 3:高台砲塔,平地可躲彈
+  // ── §2 屋頂跳躍（39..78）：先乾淨缺口,再逐步加壓 ──
+  bldg(39, 46, 12);                                  // 缺口 3 格,無敵人(教跳)
+  bldg(50, 57, 11); g[10][54] = 'W';                 // 缺口+落點走行兵
+  bldg(61, 68, 12); g[11][66] = 'T';                 // 缺口+對岸砲塔(跳前先處理)
+  bldg(72, 78, 11); g[10][75] = '*';                 // 小回血:第一段喘息
+  // ── §3 輸送帶橋（79..110）：高架帶橋跨街道深淵,帶向把人往缺口推 ──
+  fill(8, 79, 86, '>');                              // 橋 1:順向(快速通過)
+  fill(10, 89, 92, '=');  g[9][90] = 'W';            // 休息島+守衛
+  fill(8, 95, 102, '<');  g[7][99] = 'T';            // 橋 2:逆向帶+砲塔壓制
+  bldg(105, 110, 12); g[11][107] = 'K';              // 檢查點一(落回屋頂)
+  // ── §4 防火梯攀塔（111..128）：塔頂 1UP 支線,主線走中層 ──
+  bldg(111, 124, 10);                                // 主塔
+  lad(113, 4, 9);                                    // 防火梯
+  fill(4, 114, 118, '='); g[3][116] = 'T';           // 塔頂平台:砲塔守 1UP
+  g[3][118] = 'L';                                   // 1UP(打掉砲塔才拿得安穩)
+  g[9][120] = 'W';                                   // 中層守衛
+  bldg(128, 133, 11); g[10][130] = 'o';              // 落塔後補彈藥
+  // ── §5 總測驗（134..172）：風+逆向帶+缺口+雜兵 ──
+  bldg(137, 144, 12); fill(11, 138, 143, '<');       // 逆向帶屋頂(頂風走)
+  g[10][141] = 'W';
+  bldg(148, 155, 11); g[10][152] = 'T';              // 缺口+砲塔
+  bldg(159, 166, 12); fill(11, 160, 165, '>'); g[10][163] = 'W'; // 順向帶+走行兵
+  bldg(170, 174, 12); g[11][171] = 'K'; g[11][173] = '+';        // 檢查點二+門前回血
   // ── Boss 房（最後一個畫面平地），蝙蝠在高處生成、全程飛行 ──
   fill(13, 175, 191); fill(14, 175, 191);
   for (let r = 0; r <= 9; r++) g[r][174] = '#';
@@ -1675,6 +1696,7 @@ function buildShadowFortressMap() {
   //   兩側高台各架一門砲台夾擊；中央尖刺池需靠左 B、右 C 的鏡像消失方塊橋跨越，
   //   中線留一格固定安全踏板，讓玩家能在兩組節奏交界處等待。
   floor(37, 74);
+  rows[12][38] = '*';                                  // 熬過消失方塊的回血
   rows[12][40] = 'K';                                  // 檢查點一
   fill(9, 43, 48, '=');  rows[8][45] = 'b';            // 左高台砲台
   fill(9, 64, 69, '=');  rows[8][66] = 'b';            // 右高台砲台（對第 56 欄鏡射）
@@ -1723,6 +1745,7 @@ function buildShadowFortressMap() {
   fill(12, 167, 173, '='); rows[11][170] = 'c';        // P7
   fill(12, 176, 179, '='); rows[11][177] = 'd';        // P8 → 出口地面
   rows[12][182] = 'K';                                 // 隱藏檢查點
+  rows[12][183] = 'o';                                 // 豎井後補彈
 
   // ── 第五段：門前壓力段。高台砲台夾擊＋尖刺帶＋一次性大型回血。──
   fill(8, 185, 188, '=');  rows[7][186] = 'b';
@@ -1738,50 +1761,59 @@ function buildShadowFortressMap() {
   return rows.map((row) => row.join(''));
 }
 
-// 叢林關（WILD JUNGLE）：金剛會爬樹的 Boss。必經的「垂直樹冠」——靠藤蔓（梯子）在樹枝
-// 平台間往上爬跨越森林深淵（掉落即死），樹梢有猴子施壓，再下樹續行。攀爬皆為藤蔓（安全）、
-// 跨越皆為短跳（≤2 格）。已用可達性 BFS 驗證。
+// 叢林關（WILD JUNGLE）：關卡機關＝彈跳蘑菇 S(約 6 格高)＋藤蔓＋樹冠雙路線。
+// 元祖式教學曲線：§1 地面單獨認識甲蟲/食人花,蘑菇第一次出現時旁邊就是明顯的
+// 高處獎勵(學會「踩蘑菇上高處」) → §2 雙路線:樹冠層(猴子+彈藥)或地面(食人花+
+// 尖刺) → §3 藤蔓深淵(掉落即死,樹梢猴子施壓) → §4 總測驗:蘑菇彈跳跨大坑,
+// 對岸食人花守落點 → 收尾補給+Boss。
 function buildWildJungleMap() {
   const C = 194, R = 15; const g = Array.from({ length: R }, () => Array(C).fill('.'));
   const fill = (r, a, b, ch = '#') => { for (let c = a; c <= b; c++) g[r][c] = ch; };
   const vine = (c, a, b) => { for (let r = a; r <= b; r++) g[r][c] = 'H'; };
   const floor = (a, b) => { fill(13, a, b); fill(14, a, b); };
   g[12][2] = 'P';
-  // ── 地面前導（0..44）──
-  floor(0, 30); floor(34, 44);
-  g[12][6] = 'W'; g[12][14] = 'T'; g[12][22] = 'W'; g[12][40] = 'W';
-  fill(7, 10, 16, '='); g[6][13] = 'M'; g[12][27] = 'S';
-  // ── 森林深淵＋樹冠攀爬（45..98）：沒有地面，只能爬藤蔓 ──
-  fill(11, 46, 51, '='); g[10][48] = 'M';
-  vine(50, 8, 11);
-  fill(8, 52, 57, '=');  g[7][55] = 'T';
-  vine(56, 5, 8);
-  fill(5, 58, 63, '=');  g[4][60] = 'M';
-  vine(62, 2, 5);
-  fill(2, 64, 70, '=');  g[1][67] = 'M';
-  fill(4, 73, 78, '=');  g[3][75] = 'T';
-  fill(6, 81, 86, '=');  g[5][83] = 'M';
-  vine(84, 6, 10);
-  fill(10, 88, 93, '='); g[9][90] = 'M';
-  vine(91, 10, 12);
-  // ── 下樹回地面（95..120）──
-  floor(95, 120);
-  g[12][100] = 'W'; g[12][108] = 'T'; g[12][114] = 'W';
-  fill(7, 102, 108, '='); g[6][105] = 'M';
-  // ── 地面續行到 Boss（120..176）──
-  floor(120, 146); floor(150, 176);
-  g[12][124] = 'W'; g[12][134] = 'T'; g[12][140] = 'S'; g[12][156] = 'W'; g[12][162] = 'T'; g[12][170] = 'W';
-  fill(7, 126, 132, '='); g[6][129] = 'M'; fill(7, 158, 164, '='); g[6][161] = 'M';
+  // ── §1 地面教學（0..40）──
+  floor(0, 40);
+  g[12][8] = 'W';                                    // 教學 1:單獨甲蟲
+  g[12][16] = 'T';                                   // 教學 2:單獨食人花
+  g[12][24] = 'S';                                   // 教學 3:蘑菇+頭頂明顯獎勵
+  fill(7, 22, 27, '=');  g[6][25] = '*';             //   (彈上樹枝拿回血)
+  g[12][33] = 'W';
+  // ── §2 雙路線（41..92）:上=樹冠層(猴子,有彈藥) 下=地面(食人花+尖刺帶) ──
+  floor(41, 92);
+  g[12][41] = 'S';                                   // 蘑菇=樹冠入口(彈跳約 6 格,搆到 row7)
+  fill(7, 43, 49, '=');  g[6][46] = 'M';             // 樹冠 1
+  fill(5, 52, 58, '=');  g[4][55] = 'o';             // 樹冠 2:彈藥獎勵
+  fill(6, 61, 67, '=');  g[5][64] = 'M';             // 樹冠 3
+  fill(7, 70, 76, '=');  g[6][73] = 'M';             // 樹冠 4(下坡)
+  fill(9, 79, 84, '=');                              // 樹冠出口階梯
+  g[12][47] = 'T'; g[12][55] = '^'; g[12][56] = '^'; // 地面線:食人花+尖刺帶
+  g[12][63] = 'W'; g[12][71] = 'T'; g[12][78] = '^'; g[12][79] = '^';
+  g[12][86] = 'W';
+  g[12][90] = 'K';                                   // 檢查點一(深淵前)
+  // ── §3 藤蔓深淵（93..134）:沒有地面,樹梢猴子施壓 ──
+  fill(11, 94, 99, '=');  g[10][96] = 'M';
+  vine(98, 7, 11);
+  fill(7, 100, 105, '='); g[6][103] = 'T';
+  vine(104, 4, 7);
+  fill(4, 106, 112, '='); g[3][109] = 'M';
+  fill(6, 115, 120, '='); g[5][117] = 'M';           // 短跳下行
+  fill(8, 123, 128, '='); g[7][126] = 'T';
+  fill(11, 131, 134, '=');                           // 出口低枝,接回地面
+  // ── §4 蘑菇跳坑總測驗（135..176）:坑寬 4 格=普通跳跳不過,必須踩蘑菇 ──
+  floor(135, 142); g[12][142] = 'S';                 // 蘑菇在坑緣(彈跳水平距離約 5 格)
+  floor(147, 157); g[12][151] = 'T';                 // 對岸食人花守落點
+  g[12][156] = 'S';                                  // 第二坑:蘑菇連跳
+  floor(162, 176); g[12][164] = 'T'; g[12][170] = 'W';
+  fill(7, 164, 168, '='); g[6][166] = 'M';           // 頭頂猴子干擾最後跳點
   // ── 收尾 ＋ Boss 門 ──
-  floor(177, 193); g[12][180] = 'K';
+  floor(177, 193); g[12][180] = 'K'; g[12][183] = '+';
   const doorCol = C - 17;
   for (let r = 0; r <= 9; r++) g[r][doorCol] = '#'; for (let r = 10; r <= 12; r++) g[r][doorCol] = 'D';
   g[9][C - 8] = 'X';
   return g.map((row) => row.join(''));
 }
 
-// 冰山關（FROZEN PEAK）：冰霜妖靈（冰錐雨／滑翔）Boss。必經的「垂直冰煙囪」——沿梯子與
-// 濕滑冰面（I）攀爬，上方冰錐陷阱（V）不停落下，下方尖刺深淵＝掉落即死。再滑行前進到 Boss。
 // 冰峰（FROZEN PEAK）：真正的垂直關卡——整座關卡是一口 7 個畫面高的登山井，
 // 鏡頭垂直捲動。左半 16 格是攀登路線（之字形岩架＋梯子），右半是山體實心岩；
 // 塔頂（最上面一個畫面）右側是 Boss 房，玩家在頂端走進 Boss 門（引擎約定：
@@ -1799,30 +1831,36 @@ function buildFrozenPeakMap() {
   g[101][2] = 'P';
   g[102][10] = 'W';
   g[93][10] = 'V';                       // 冰錐吊在首段岩架下，威脅底部通道
+  g[90][6] = 'V';                        // 第二根冰錐:教「抬頭看再走」
   fill(92, 9, 12, '='); lad(13, 92, 102); // 首段長梯，梯頂接岩架
   g[91][10] = 'T';                        // 冰晶砲居高臨下(ice: T=FrostBlower)
+  g[91][12] = '*';                        // 打掉冰晶砲後的回血獎勵
   // ── 畫面 5（rows 75..89）：向左之字跳 ──
   fill(89, 5, 8, '=');  g[88][6] = 'W';   // 冰跳蛙(ice: W=IceHopper)
   fill(86, 1, 4, '=');
   lad(3, 76, 85); fill(76, 4, 7, '=');    // 梯頂左側岩棚
-  // ── 畫面 4（rows 60..74）：折返向右，冰面岩架＋砲塔 ──
+  // ── 畫面 4（rows 60..74）：折返向右，冰面岩架＋砲塔＋山體密室 ──
   fill(73, 8, 11, '=');
   fill(70, 12, 15, 'I');                  // 滑冰岩架
+  for (let r = 66; r <= 68; r++) fill(r, 16, 21, '.'); // 山體密室(從冰岩架走進右壁)
+  g[68][19] = 'o'; g[66][17] = 'V';       // 彈藥獎勵,入口冰錐守門
   fill(67, 8, 9, '=');  g[66][8] = 'T';   // 砲塔高台守住梯口
   lad(14, 61, 69); fill(61, 10, 13, '=');
-  g[60][11] = 'K';                        // 檢查點(半山腰)
+  g[60][11] = 'K'; g[60][12] = '*';       // 檢查點(半山腰)+回血
   // ── 畫面 3（rows 45..59）：向左，尖刺岩架＋冰錐陷阱 ──
   fill(58, 5, 8, '=');  g[57][8] = '^';   // 落點右半是尖刺，逼精準跳
   g[47][6] = 'V';                         // 冰錐正對下方落點
   fill(55, 1, 4, 'I');  g[54][1] = 'T';
   lad(2, 46, 54); fill(46, 3, 6, '=');
-  // ── 畫面 2（rows 30..44）：折返向右 ──
+  // ── 畫面 2（rows 30..44）：折返向右＋隱藏 1UP 密室 ──
   fill(43, 8, 11, '=');
   fill(40, 12, 15, '='); g[39][14] = 'W';
+  for (let r = 41; r <= 43; r++) fill(r, 16, 22, '.'); // 隱藏密室:貼右壁下落才進得去
+  g[43][21] = 'L';                        // 1UP(出來會落回畫面 4 的冰岩架,風險自負)
   lad(13, 31, 39); fill(31, 8, 12, '=');
   g[30][9] = 'W'; g[30][8] = 'K';         // 檢查點(登頂前)
   // ── 畫面 1（rows 15..29）：最後長梯直通塔頂 ──
-  fill(28, 4, 7, 'I');
+  fill(28, 4, 7, 'I'); g[27][7] = '*';     // 登頂前最後回血
   fill(20, 8, 9, '=');  g[19][8] = 'T';   // 砲塔騷擾爬梯者
   lad(5, 13, 27);                          // 長梯穿過塔頂地板的開口(col 5)
   // ── 畫面 0（rows 0..14）：塔頂走廊 → Boss 門 → Boss 房(cols 16..31) ──
@@ -1837,38 +1875,60 @@ function buildFrozenPeakMap() {
   return g.map((row) => row.join(''));
 }
 
-// 熔岩廠（MAGMA WORKS）：水平關卡，核心機制＝週期性熔岩漲潮。
-// 高潮淹到 y=200 → 站在 row≤12 的平台面(腳 y≤192)安全；一般地面(rows 13..14)高潮會淹。
-// 低窪槽段只有 row 14 一層地面(腳 y=224)，連低潮(216)都會淹——必須抓週期快速通過或上踏台。
-// F(火焰噴射柱)一律放在「站立列」(平台面上一格)，不可放實心列本身。
+// 熔岩廠（MAGMA WORKS）：立體關卡(3 個畫面高)——底部「潮汐隧道」水平推進,
+// 中段「爐心豎井」垂直攀爬脫離潮汐,頂層甲板通往 Boss(塔頂畫面,符合引擎約定)。
+// 潮汐只影響地圖最低層:高潮面=底-40(隧道地面會淹,須上高台)、低潮面=底-24
+// (只淹下沉的窪槽)。教學曲線:§1 平地先看一次漲潮(避潮台就在旁邊) → §2 窪槽
+// (低潮也會淹,踏台限時通過) → §3 噴火柱+漲潮組合 → §4 豎井攀爬(噴火柱守平台)
+// → §5 甲板收尾。F 一律放「站立列」。
 function buildMagmaWorksMap() {
-  const C = 199, R = 15; const g = Array.from({ length: R }, () => Array(C).fill('.'));
+  const C = 140, R = 45; // 2240×720 px
+  const g = Array.from({ length: R }, () => Array(C).fill('#')); // 預設實心,再挖空間
+  const carve = (r0, r1, c0, c1) => { for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) g[r][c] = '.'; };
   const fill = (r, a, b, ch = '#') => { for (let c = a; c <= b; c++) g[r][c] = ch; };
-  const floor = (a, b) => { fill(13, a, b); fill(14, a, b); };
-  g[12][2] = 'P';
-  // ── 前導（0..44）：認識漲潮——平地＋兩座避潮台 ──
-  floor(0, 44);
-  fill(10, 10, 14, '='); fill(10, 28, 32, '=');
-  g[12][7] = 'W'; g[12][20] = 'T'; g[12][36] = 'F'; g[12][40] = 'W';
-  // ── 低窪槽（45..88）：地面下沉一格，低潮也會淹；沿踏台(間距 3 格)跳越 ──
-  fill(14, 45, 88, '#');
-  fill(11, 48, 51, '='); fill(11, 55, 58, '='); fill(11, 62, 65, '=');
-  fill(11, 69, 72, '='); fill(11, 76, 79, '='); fill(11, 83, 86, '=');
-  g[10][63] = 'T'; g[10][77] = 'T'; g[13][53] = 'F'; g[13][74] = 'F';
-  // ── 中段（89..134）：正常地面，噴火柱夾道＋滾雷地雷 ──
-  floor(89, 134);
-  g[12][92] = 'K';
-  fill(10, 94, 98, '='); fill(10, 112, 116, '='); fill(10, 128, 132, '=');
-  g[12][100] = 'F'; g[12][108] = 'W'; g[9][113] = 'T'; g[12][120] = 'F'; g[12][124] = 'T';
-  // ── 終段（135..176）：階梯高台混戰 ──
-  floor(135, 176);
-  fill(11, 140, 144, '='); fill(9, 150, 154, '='); fill(11, 160, 164, '=');
-  g[12][147] = 'F'; g[12][156] = 'W'; g[10][161] = 'T'; g[12][168] = 'W'; g[12][172] = 'K';
-  // ── Boss 門 ──
-  floor(177, 198);
-  const doorCol = C - 17;
-  for (let r = 0; r <= 9; r++) g[r][doorCol] = '#'; for (let r = 10; r <= 12; r++) g[r][doorCol] = 'D';
-  g[9][C - 8] = 'X';
+  const lad = (c, a, b) => { for (let r = a; r <= b; r++) g[r][c] = 'H'; };
+  carve(31, 42, 1, 112);        // 底部隧道(地面 rows 43..44)
+  carve(13, 30, 97, 111);       // 爐心豎井(接隧道與頂層)
+  carve(1, 12, 97, 138);        // 頂層甲板空間(地板 rows 13..14 蓋在 col112 之後)
+  fill(13, 97, 111, '.'); fill(14, 97, 111, '.'); // 豎井頂開口(甲板地板不蓋豎井)
+  fill(13, 112, 138, '#'); fill(14, 112, 138, '#'); // 甲板地板
+  g[41][3] = 'P';
+  // ── §1 潮汐教學（1..32）：平地+明顯避潮台,雜兵單獨出現 ──
+  g[42][10] = 'W';                                   // 教學:單獨滾雷
+  fill(40, 15, 19, '=');                             // 避潮台(第一次漲潮就在眼前)
+  g[42][24] = 'T';                                   // 教學:單獨噴漿砲
+  fill(40, 28, 32, '='); g[39][30] = '*';            // 第二座避潮台+回血
+  // ── §2 低窪槽（33..60）：只有最低層地面,低潮也淹;踏台間距 3 格 ──
+  fill(43, 34, 58, '.');                             // 挖掉 row43 → 只剩 row44 地面
+  fill(41, 36, 39, '='); fill(41, 43, 46, '='); fill(41, 50, 53, '=');
+  g[40][44] = 'T';                                   // 中央踏台噴漿砲
+  g[43][41] = 'F'; g[43][48] = 'F';                  // 窪槽底噴火柱(站立列 43)
+  // ── §3 噴火柱+漲潮組合（61..95）──
+  g[42][63] = 'K';                                   // 檢查點一
+  fill(40, 66, 69, '='); fill(40, 76, 79, '='); fill(40, 86, 89, '=');
+  g[42][72] = 'F'; g[42][82] = 'F';                  // 地面噴火柱(站立列 42)
+  g[42][74] = 'W'; g[42][92] = 'W';
+  g[39][87] = '*';                                   // 高台回血
+  // ── §4 爐心豎井（cols 97..111, rows 13..42）：往上爬脫離潮汐 ──
+  fill(40, 98, 101, '=');                            // 首段平台(自隧道地面起跳)
+  lad(103, 34, 42);                                  // 長梯一
+  fill(34, 104, 107, '='); g[33][106] = 'T';         // 平台+噴漿砲守梯口
+  fill(31, 108, 111, '=');                           // 右壁平台
+  lad(110, 24, 30);                                  // 長梯二
+  fill(24, 106, 109, '='); g[23][107] = 'W';         // 平台+滾雷巡邏
+  g[30][109] = 'F';                                  // 噴火柱守長梯二的梯口(站立列 30)
+  fill(21, 101, 104, '=');                           // 折返平台
+  lad(102, 13, 20);                                  // 長梯三(直通甲板高度)
+  fill(13, 103, 111, '=');                           // 橋面:封住豎井頂,接甲板
+  // ── §5 頂層甲板（112..122）：收尾壓力段 ──
+  g[12][113] = 'K';                                  // 檢查點二(出豎井)
+  g[12][117] = 'W'; g[12][119] = 'F'; g[12][121] = 'T';
+  g[12][122] = '+';                                  // 門前大回血
+  // ── Boss 門與決鬥房(頂層最後一個畫面) ──
+  const doorCol = 123;
+  for (let r = 1; r <= 9; r++) g[r][doorCol] = '#';
+  for (let r = 10; r <= 12; r++) g[r][doorCol] = 'D';
+  g[9][131] = 'X';
   return g.map((row) => row.join(''));
 }
 
@@ -2089,7 +2149,7 @@ class Bullet {
 
     // 大型漲潮岩漿只會融掉冰流，絕對不建立全畫面冰層。
     if (game.levelData.lavaTide && !game.bossActive) {
-      const surface = lavaSurfaceForState(lavaTideState(game.worldT));
+      const surface = lavaSurfaceForState(lavaTideState(game.worldT), map);
       if (surface !== null && this.y + this.h >= surface) { this.meltIce(game); return; }
       for (const jet of map.jets) {
         if (!aabbOverlap(this, jetRect(jet.col, jet.row))) continue;
@@ -2276,7 +2336,7 @@ class Bullet {
 }
 
 class HealthPickup {
-  constructor(x, y, kind = 'hp') {
+  constructor(x, y, kind = 'hp', persistent = false) {
     this.kind = kind; // 'hp' 回血 | 'full' 全回復 | 'ammo' 武器彈藥 | 'fullAmmo' 全彈藥 | 'life' 額外生命
     const big = kind === 'full' || kind === 'fullAmmo';
     const art = kind === 'life' ? SPRITES.extraLife : big ? SPRITES.healBig : SPRITES.heal;
@@ -2284,7 +2344,7 @@ class HealthPickup {
     this.h = art.h;
     this.x = x - this.w / 2; this.y = y - this.h;
     this.vx = 0; this.vy = -1.5;
-    this.life = big ? 999999 : 400;
+    this.life = (big || persistent) ? 999999 : 400; // 地圖固定補給常駐;敵人掉落物限時
     this.dead = false;
   }
   update(game) {
@@ -5028,7 +5088,7 @@ class Game {
     this.enemyBullets = [];
     this.queuedPlayerBullets = [];
     this.queuedEnemyBullets = [];
-    this.pickups = this.map.pickupSpawns.map((s) => new HealthPickup(s.x + TILE / 2, s.y + TILE, s.kind));
+    this.pickups = this.map.pickupSpawns.map((s) => new HealthPickup(s.x + TILE / 2, s.y + TILE, s.kind, true));
     this.particles = [];
     this.camera = { x: 0, y: 0 };
     this.state = 'ready';     // ready | play | pause | weaponMenu | dead | intro | victory
@@ -5181,7 +5241,7 @@ class Game {
 
   freezeMagmaPoolAtCol(col, frames = LOCAL_MAGMA_FREEZE_FRAMES) {
     // 漲潮啟動時屬於「大岩漿」，冰流只能融化，不能在上面鋪冰。
-    if (lavaSurfaceForState(lavaTideState(this.worldT)) !== null) return false;
+    if (lavaSurfaceForState(lavaTideState(this.worldT), this.map) !== null) return false;
     const pool = this.magmaPoolForCol(col);
     if (!pool) return false;
     const old = this.frozenMagmaPools.get(pool.key);
@@ -5500,7 +5560,7 @@ class Game {
     // 熔岩漲潮(熔岩關):淹沒期間待在低處會持續受灼傷
     if (this.levelData.lavaTide && !this.player.dead && this.player.invulnTimer <= 0) {
       const lavaState = lavaTideState(this.worldT);
-      const surfaceY = lavaSurfaceForState(lavaState);
+      const surfaceY = lavaSurfaceForState(lavaState, this.map);
       if (surfaceY !== null && this.player.x < this.map.doorX && this.player.y + this.player.h > surfaceY) {
         this.player.hurt(this, this.player.x, LAVA_TIDE_DMG);
       }
@@ -5907,12 +5967,12 @@ class Game {
     if (this.levelData.lavaTide) {
       const st = lavaTideState(this.worldT);
       const lavaW = Math.max(0, Math.min(SCREEN_W, this.map.doorX - this.camera.x));
-      const surfaceY = lavaSurfaceForState(st);
+      const surfaceY = lavaSurfaceForState(st, this.map);
       if (surfaceY !== null && lavaW > 0) {
         const t = this.worldT;
         // 大型漲潮永遠維持熔岩，不受冰武器影響。
         ctx.fillStyle = 'rgba(248,56,0,0.75)';
-        ctx.fillRect(0, surfaceY, lavaW, SCREEN_H - surfaceY);
+        ctx.fillRect(0, surfaceY, lavaW, this.map.heightPx - surfaceY);
         ctx.fillStyle = ((t >> 3) & 1) ? '#f8a838' : '#f8d820';
         for (let x = 0; x < lavaW; x += 8) {
           ctx.fillRect(x, surfaceY - (((x + (t >> 1)) >> 3) & 1) * 2, 8, 3);
@@ -5923,7 +5983,7 @@ class Game {
         for (let i = 0; i < 10; i++) {
           const s = hash32(i + (this.worldT >> 3));
           const x = s % Math.max(1, lavaW);
-          const baseY = st === 'warnHigh' ? LAVA_LOW_SURFACE_Y - 2 : 232;
+          const baseY = this.map.heightPx - (st === 'warnHigh' ? LAVA_LOW_OFFSET + 2 : 8);
           ctx.fillRect(x, baseY - (s >> 8) % 10, 2, 2);
         }
       }
