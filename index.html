@@ -46,8 +46,8 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 .iconbtn:active{background:var(--accent)}
 
 /* ── Map ── */
-#map{position:absolute;top:0;bottom:0;left:0;right:0;background:#0a0d12;z-index:1}
-.leaflet-container{background:#0a0d12;font-family:inherit}
+#map{position:absolute;top:0;bottom:0;left:0;right:0;background:#e7e5e0;z-index:1}
+.leaflet-container{background:#e7e5e0;font-family:inherit}
 .leaflet-popup-content-wrapper{background:var(--surface2);color:var(--text);border-radius:12px;box-shadow:var(--shadow)}
 .leaflet-popup-tip{background:var(--surface2)}
 .leaflet-popup-content{margin:12px 14px;font-size:.85rem;line-height:1.55}
@@ -428,7 +428,7 @@ const mLayers={};
 function initMap(){
   try{
     map = L.map('map',{zoomControl:true,attributionControl:true,tap:true}).setView([34.6975,135.5150],14);
-    tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
       maxZoom:20, minZoom:11, subdomains:'abcd',
       attribution:'© OpenStreetMap © CARTO', crossOrigin:true
     });
@@ -757,22 +757,53 @@ function renderFallback(){
 /* ============================================================
    GPS
    ============================================================ */
+function inAppBrowser(){
+  const ua=navigator.userAgent||'';
+  return window.self!==window.top || /FBAN|FBAV|Instagram|Line|MicroMessenger|Twitter|KAKAOTALK|snapchat/i.test(ua);
+}
 function toggleGps(){
   const btn=document.getElementById('fabGps');
   if(gpsWatch){ navigator.geolocation.clearWatch(gpsWatch); gpsWatch=null; btn.classList.remove('active'); if(gpsMarker&&map){map.removeLayer(gpsMarker);} gpsMarker=null; gpsLatLng=null; gpsCentered=false; toast('📍','已關閉定位'); updateTaskBar(); return; }
-  if(!navigator.geolocation){ toast('⚠️','此裝置不支援定位，可手動打卡'); return; }
-  if(!window.isSecureContext){ toast('🔒','需在 https 網頁才能定位（可先手動打卡）'); }
+  if(!navigator.geolocation){ toast('⚠️','此裝置/瀏覽器不支援定位，可手動打卡'); return; }
+  if(!window.isSecureContext){ gpsHelp('insecure'); return; }
   btn.classList.add('active');
   toast('📡','定位中…請允許位置權限');
-  const onOk=pos=>{ gpsLatLng={lat:pos.coords.latitude,lng:pos.coords.longitude}; placeGps(); };
-  const onErr=err=>{
-    btn.classList.remove('active'); if(gpsWatch){navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;}
-    const m={1:'你拒絕了位置權限',2:'目前收不到定位訊號',3:'定位逾時'}[err.code]||'定位失敗';
-    toast('📍',m+' — 全功能仍可手動操作');
-  };
-  // 先快速取一次，再持續追蹤
-  navigator.geolocation.getCurrentPosition(onOk,onErr,{enableHighAccuracy:true,timeout:12000,maximumAge:0});
-  gpsWatch=navigator.geolocation.watchPosition(onOk,onErr,{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+  navigator.geolocation.getCurrentPosition(
+    pos=>{ gpsLatLng={lat:pos.coords.latitude,lng:pos.coords.longitude}; placeGps(); startWatch(); },
+    err=>{ btn.classList.remove('active'); gpsError(err); },
+    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+  );
+}
+function startWatch(){
+  gpsWatch=navigator.geolocation.watchPosition(
+    pos=>{ gpsLatLng={lat:pos.coords.latitude,lng:pos.coords.longitude}; placeGps(); },
+    ()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+}
+function gpsError(err){
+  if(err.code===1){ gpsHelp(inAppBrowser()?'inapp':'denied'); }
+  else{ toast('📍',(err.code===2?'目前收不到定位訊號':'定位逾時')+' — 可改用手動打卡'); }
+}
+function gpsHelp(kind){
+  const common=`<div class="info-block" style="border-color:var(--green)"><h4>✅ 不定位也完全能用</h4>
+    <p style="color:var(--text)">所有打卡都能<b>手動</b>按；行程、倒數、現在去哪、情報圖層都不受影響。定位只是「自動打卡＋顯示你到下一站的距離方位」的加分功能。</p></div>`;
+  let body;
+  if(kind==='inapp'){
+    body=`<div class="info-block" style="border-color:var(--accent2)"><h4>📲 你可能在「App 內建瀏覽器」開啟</h4>
+      <p>在 LINE／IG／FB／Messenger 等 App 內開網頁時，系統會直接擋掉定位（不會跳出詢問）。</p>
+      <p style="margin-top:6px;color:var(--text)"><b>解法：</b>點右上角「⋯」→ 選「<b>在 Safari / Chrome 開啟</b>」，再按一次定位即可。</p></div>${common}`;
+  }else if(kind==='insecure'){
+    body=`<div class="info-block" style="border-color:var(--accent2)"><h4>🔒 需要 https 網頁</h4>
+      <p>目前網址不是 https，瀏覽器會禁止定位。用 GitHub Pages（https）開啟即可。</p></div>${common}`;
+  }else{
+    body=`<div class="info-block" style="border-color:var(--accent2)"><h4>📍 定位被系統擋住（你不一定按了拒絕）</h4>
+      <p>「權限被拒」常常不是你手動按的，多半是下列設定：</p>
+      <ul style="margin-top:6px">
+        <li><b>iOS</b>：設定 → 隱私與安全性 → 定位服務 → 要<b>開啟</b>，且「網站」/Safari 設為「詢問」或「使用 App 期間」</li>
+        <li><b>網站權限</b>：網址列旁 🔒 或 ⓘ → 網站設定 → 位置 → 改為<b>允許</b>，再重新整理</li>
+        <li><b>Android Chrome</b>：⋮ → 設定 → 網站設定 → 位置 → 允許</li>
+      </ul></div>${common}`;
+  }
+  openSheet('📍 定位無法使用',body);
 }
 function placeGps(){
   if(!gpsLatLng) return;
