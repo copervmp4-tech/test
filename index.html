@@ -165,9 +165,15 @@ input[type=range]{accent-color:var(--accent)}
 #toast .em{font-size:1.4rem;display:block;margin-bottom:3px}
 
 /* alert banner */
-#alertBanner{position:fixed;left:8px;right:8px;top:calc(var(--safe-top) + 92px);z-index:1180;background:linear-gradient(135deg,var(--red),#b02a2f);color:#fff;border-radius:12px;padding:11px 14px;font-size:.82rem;font-weight:600;box-shadow:var(--shadow);display:flex;gap:9px;align-items:center;animation:slidein .4s}
+#alertBanner{position:fixed;left:8px;right:8px;top:calc(var(--safe-top) + 142px);z-index:1180;background:linear-gradient(135deg,var(--red),#b02a2f);color:#fff;border-radius:12px;padding:11px 14px;font-size:.82rem;font-weight:600;box-shadow:var(--shadow);display:flex;gap:9px;align-items:center;animation:slidein .4s}
 @keyframes slidein{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
 #alertBanner .x{margin-left:auto;font-size:1.2rem;opacity:.9}
+
+/* route day segmented control */
+#routeDayCtl{position:fixed;left:8px;top:calc(var(--safe-top) + 96px);z-index:1160;display:flex;align-items:center;gap:3px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:4px 5px;box-shadow:var(--shadow);font-size:.72rem}
+#routeDayCtl .rdlabel{color:var(--muted);font-weight:700;padding:0 3px}
+#routeDayCtl button{padding:5px 9px;border-radius:14px;font-weight:700;color:var(--muted)}
+#routeDayCtl button.on{background:var(--route);color:#04222b}
 </style>
 </head>
 <body>
@@ -194,6 +200,14 @@ input[type=range]{accent-color:var(--accent)}
   <div class="fb-note">📡 地圖圖磚載入失敗（現場網路壅塞）— 已切換為<b>文字情報模式</b>。以下依<b id="fbTime">目前時刻</b>提供重點。<button id="fbRetry" style="margin-left:6px;color:var(--accent2);text-decoration:underline">重試地圖</button></div>
   <div id="fbContent"></div>
 </div></div>
+
+<!-- ── ROUTE DAY CONTROL ── -->
+<div id="routeDayCtl">
+  <span class="rdlabel">🧭 路線</span>
+  <button data-rd="24">7/24</button>
+  <button data-rd="25">7/25</button>
+  <button data-rd="both">兩日</button>
+</div>
 
 <!-- ── ALERT BANNER ── -->
 <div id="alertBanner" class="hidden"></div>
@@ -243,10 +257,10 @@ function toMin(s){const [h,m]=s.split(':').map(Number);return h*60+m}
 /* ---------- 圖層定義 ---------- */
 const LAYERS = {
   matsuri:{name:'祭事',   emoji:'⛩️', color:'#e8552f', on:true},
-  yatai:  {name:'屋台',   emoji:'🍢', color:'#ffb84d', on:true},
+  yatai:  {name:'屋台',   emoji:'🍢', color:'#ffb84d', on:false},
   hanabi: {name:'花火觀賞',emoji:'🎆', color:'#a855f7', on:true},
-  station:{name:'車站',   emoji:'🚉', color:'#3b82f6', on:true},
-  crowd:  {name:'人潮預警',emoji:'🔥', color:'#e5484d', on:true},
+  station:{name:'車站',   emoji:'🚉', color:'#3b82f6', on:false},
+  crowd:  {name:'人潮預警',emoji:'🔥', color:'#e5484d', on:false},
   route:  {name:'我的路線',emoji:'🧭', color:'#22d3ee', on:true},
 };
 
@@ -407,13 +421,16 @@ function anyCheckedPrefix(pre){ return Object.keys(store.checkins).some(k=>k.ind
    地圖初始化
    ============================================================ */
 let map, tileLayer, fallbackMode=false, gpsMarker=null, gpsLatLng=null, gpsWatch=null;
+let routeDay=24, gpsCentered=false;
+const FEST_CENTER={lat:34.6985,lng:135.5175};
 const mLayers={};
 
 function initMap(){
   try{
     map = L.map('map',{zoomControl:true,attributionControl:true,tap:true}).setView([34.6975,135.5150],14);
-    tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-      maxZoom:19, minZoom:11, attribution:'© OpenStreetMap', crossOrigin:true
+    tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+      maxZoom:20, minZoom:11, subdomains:'abcd',
+      attribution:'© OpenStreetMap © CARTO', crossOrigin:true
     });
     let tileErrors=0, tileOk=false;
     tileLayer.on('tileerror',()=>{ tileErrors++; if(!tileOk && tileErrors>=4) enterFallback(); });
@@ -485,15 +502,23 @@ function rebuildRoute(){
   if(!mLayers.route) return;
   mLayers.route.clearLayers();
   const activeIdx=currentRouteIndex();
-  ROUTE.forEach((r,i)=>{
+  const seen={};
+  const shown = ROUTE.filter(r=> routeDay==='both' || r.d===routeDay);
+  shown.forEach(r=>{
+    const gi=ROUTE.indexOf(r);
+    // 讓完全重疊的點稍微散開，避免疊成一坨
+    const key=r.lat.toFixed(4)+','+r.lng.toFixed(4);
+    const n=(seen[key]=(seen[key]||0)+1)-1;
+    const off=n*0.00055;
     const done=isChecked(r.id);
-    let cls='route-dot'; if(i===activeIdx) cls+=' active'; else if(done) cls+=' done';
-    const mk=L.marker([r.lat,r.lng],{icon:L.divIcon({className:'',html:`<div class="${cls}">${done?'✓':(i+1)}</div>`,iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-16]}),zIndexOffset:1000});
-    mk.on('click',()=>openRoutePoint(r,i)); mLayers.route.addLayer(mk);
+    let cls='route-dot'; if(gi===activeIdx) cls+=' active'; else if(done) cls+=' done';
+    const mk=L.marker([r.lat+off,r.lng+off],{icon:L.divIcon({className:'',html:`<div class="${cls}">${done?'✓':(gi+1)}</div>`,iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-16]}),zIndexOffset:1000});
+    mk.on('click',()=>openRoutePoint(r,gi)); mLayers.route.addLayer(mk);
   });
-  [24,25].forEach(day=>{
+  const days = routeDay==='both'?[24,25]:[routeDay];
+  days.forEach(day=>{
     const seg=ROUTE.filter(r=>r.d===day).map(r=>[r.lat,r.lng]);
-    if(seg.length>1) mLayers.route.addLayer(L.polyline(seg,{color:LAYERS.route.color,weight:3,opacity:.7,dashArray:'6 7'}));
+    if(seg.length>1) mLayers.route.addLayer(L.polyline(seg,{color:LAYERS.route.color,weight:3,opacity:.6,dashArray:'6 7'}));
   });
 }
 function applyLayerVisibility(){
@@ -514,7 +539,7 @@ function buildLayerChips(){
     const chip=document.createElement('button');
     chip.className='layer-chip'+(L_.on?'':' off');
     chip.innerHTML=`<span class="dot" style="background:${L_.color}"></span>${L_.emoji} ${L_.name}`;
-    chip.onclick=()=>{ L_.on=!L_.on; chip.classList.toggle('off',!L_.on); applyLayerVisibility(); if(fallbackMode) renderFallback(); };
+    chip.onclick=()=>{ L_.on=!L_.on; chip.classList.toggle('off',!L_.on); applyLayerVisibility(); if(k==='route') updateRouteDayCtl(); if(fallbackMode) renderFallback(); };
     wrap.appendChild(chip);
   });
 }
@@ -734,20 +759,34 @@ function renderFallback(){
    ============================================================ */
 function toggleGps(){
   const btn=document.getElementById('fabGps');
-  if(gpsWatch){ navigator.geolocation.clearWatch(gpsWatch); gpsWatch=null; btn.classList.remove('active'); if(gpsMarker&&map){map.removeLayer(gpsMarker);} gpsMarker=null; gpsLatLng=null; toast('📍','已關閉定位'); updateTaskBar(); return; }
+  if(gpsWatch){ navigator.geolocation.clearWatch(gpsWatch); gpsWatch=null; btn.classList.remove('active'); if(gpsMarker&&map){map.removeLayer(gpsMarker);} gpsMarker=null; gpsLatLng=null; gpsCentered=false; toast('📍','已關閉定位'); updateTaskBar(); return; }
   if(!navigator.geolocation){ toast('⚠️','此裝置不支援定位，可手動打卡'); return; }
+  if(!window.isSecureContext){ toast('🔒','需在 https 網頁才能定位（可先手動打卡）'); }
   btn.classList.add('active');
-  gpsWatch=navigator.geolocation.watchPosition(pos=>{
-    gpsLatLng={lat:pos.coords.latitude,lng:pos.coords.longitude};
-    if(map){
-      if(!gpsMarker){ gpsMarker=L.marker([gpsLatLng.lat,gpsLatLng.lng],{icon:L.divIcon({className:'',html:'<div class="gps-dot"></div>',iconSize:[18,18],iconAnchor:[9,9]}),zIndexOffset:2000}).addTo(map); map.setView([gpsLatLng.lat,gpsLatLng.lng],16); }
-      else gpsMarker.setLatLng([gpsLatLng.lat,gpsLatLng.lng]);
+  toast('📡','定位中…請允許位置權限');
+  const onOk=pos=>{ gpsLatLng={lat:pos.coords.latitude,lng:pos.coords.longitude}; placeGps(); };
+  const onErr=err=>{
+    btn.classList.remove('active'); if(gpsWatch){navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;}
+    const m={1:'你拒絕了位置權限',2:'目前收不到定位訊號',3:'定位逾時'}[err.code]||'定位失敗';
+    toast('📍',m+' — 全功能仍可手動操作');
+  };
+  // 先快速取一次，再持續追蹤
+  navigator.geolocation.getCurrentPosition(onOk,onErr,{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+  gpsWatch=navigator.geolocation.watchPosition(onOk,onErr,{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+}
+function placeGps(){
+  if(!gpsLatLng) return;
+  if(map){
+    if(!gpsMarker) gpsMarker=L.marker([gpsLatLng.lat,gpsLatLng.lng],{icon:L.divIcon({className:'',html:'<div class="gps-dot"></div>',iconSize:[18,18],iconAnchor:[9,9]}),zIndexOffset:2000}).addTo(map);
+    else gpsMarker.setLatLng([gpsLatLng.lat,gpsLatLng.lng]);
+    if(!gpsCentered){
+      gpsCentered=true;
+      const d=distM(gpsLatLng,FEST_CENTER);
+      if(d<5000){ map.setView([gpsLatLng.lat,gpsLatLng.lng],16); toast('📍','已定位到你的位置'); }
+      else{ map.setView([FEST_CENTER.lat,FEST_CENTER.lng],14); toast('📍','你距會場約 '+Math.round(d/1000)+' km（地圖仍停在會場）'); }
     }
-    autoCheckinNearby(); updateNextDistance();
-  },err=>{
-    btn.classList.remove('active'); gpsWatch=null;
-    toast('📍','無法取得定位（已拒絕/失敗）— 全功能仍可手動操作');
-  },{enableHighAccuracy:true,maximumAge:5000,timeout:12000});
+  }
+  autoCheckinNearby(); updateNextDistance();
 }
 function distM(a,b){
   const R=6371000,toR=x=>x*Math.PI/180;
@@ -872,8 +911,16 @@ function openSim(){
 function setSim(day,h,m){ simOffset=new Date(FEST_YEAR,6,day,h,m,0).getTime(); onTimeChanged(); }
 function setSimLive(){ simOffset=null; bannerDismissed=false; onTimeChanged(); }
 function onTimeChanged(){
+  const f=festClock(now());
+  if(isFestDayF(f)){ routeDay=f.day; updateRouteDayCtl(); }
   updateTaskBar(); rebuildCrowd(); rebuildRoute(); checkAlertBanner();
   if(fallbackMode) renderFallback();
+}
+function updateRouteDayCtl(){
+  document.querySelectorAll('#routeDayCtl button').forEach(b=>{
+    b.classList.toggle('on', String(routeDay)===b.dataset.rd);
+  });
+  document.getElementById('routeDayCtl').style.display = LAYERS.route.on?'flex':'none';
 }
 
 /* ============================================================
@@ -930,8 +977,18 @@ document.getElementById('btnRemind').onclick=openRemind;
 document.getElementById('btnAchv').onclick=openAchv;
 document.getElementById('fbRetry').onclick=()=>{ exitFallback(); if(tileLayer) tileLayer.redraw(); };
 
+// 路線日切換
+document.querySelectorAll('#routeDayCtl button').forEach(b=>b.onclick=()=>{
+  routeDay = b.dataset.rd==='both'?'both':(+b.dataset.rd);
+  if(!LAYERS.route.on){ LAYERS.route.on=true; applyLayerVisibility(); buildLayerChips(); }
+  updateRouteDayCtl(); rebuildRoute();
+});
+
 buildLayerChips();
+// 依今天（或即時）預設路線日
+(function(){ const f=festClock(now()); routeDay=(f.mo===7&&f.day===25)?25:24; })();
 initMap();
+updateRouteDayCtl();
 updateTaskBar();
 checkAlertBanner();
 
