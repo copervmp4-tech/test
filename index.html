@@ -285,9 +285,9 @@ const MATSURI = [
 /* ---------- 屋台層（範圍色塊） ---------- */
 const YATAI = [
   {id:'y-shoutengai', name:'天滿宮境內＋天神橋筋商店街',
-   poly:[[34.6912,135.5108],[34.6912,135.5122],[34.6960,135.5133],[34.7010,135.5100],[34.7008,135.5088],[34.6955,135.5118]],
+   poly:[[34.6916,135.5102],[34.6916,135.5113],[34.6952,135.5119],[34.6962,135.5134],[34.6972,135.5124],[34.7005,135.5114],[34.7005,135.5103]],
    color:'#ffb84d', level:'密度最高',
-   info:'僅天三以南有屋台。宵宮 15:00 起／本宮 12:00–22:00，尖峰 17:00–20:00。'},
+   info:'僅天三以南有屋台（本圖沿天神橋筋商店街一丁目～三丁目＋天滿宮境內示意）。宵宮 15:00 起／本宮 12:00–22:00，尖峰 17:00–20:00。'},
   {id:'y-okawa', name:'大川沿岸（東岸最密）',
    poly:[[34.6968,135.5165],[34.7050,135.5195],[34.7060,135.5210],[34.6975,135.5185]],
    color:'#e8a33d', level:'邊吃邊看花火',
@@ -305,7 +305,7 @@ const HANABI = [
   {id:'h-sempokan',name:'泉布觀東側（付費）',lat:34.6990,lng:135.5185,tier:'paid',view:'頭頂近景',arrive:'憑票',crowd:'有座位'},
   {id:'h-enkei',name:'円形廣場（付費）',lat:34.6965,lng:135.5178,tier:'paid',view:'中景',arrive:'憑票',crowd:'有座位'},
   {id:'h-sakura-mizu',name:'櫻之宮／ふれあいの水辺（付費）',lat:34.7015,lng:135.5205,tier:'paid',view:'頭頂近景',arrive:'憑票',crowd:'有座位'},
-  {id:'h-genpachi',name:'源八橋周邊',lat:34.7025,lng:135.5182,tier:'free',view:'頭頂近景',arrive:'中午起佔位戰',crowd:'極擁擠'},
+  {id:'h-genpachi',name:'源八橋周邊（你的計畫觀賞點）',lat:34.7030,lng:135.5188,tier:'free',view:'頭頂近景',arrive:'中午起佔位戰',crowd:'極擁擠'},
   {id:'h-ginbashi',name:'桜宮橋＝銀橋',lat:34.6976,lng:135.5206,tier:'free',view:'近景',arrive:'18:00 起管制，17:30 前需定位',crowd:'極擁擠'},
   {id:'h-miyakojima',name:'都島大橋',lat:34.7082,lng:135.5232,tier:'hidden',view:'遠景',arrive:'19:00 前',crowd:'中'},
   {id:'h-oap',name:'OAP 木製デッキ',lat:34.6978,lng:135.5152,tier:'hidden',view:'中景',arrive:'18:30 前',crowd:'中'},
@@ -378,9 +378,9 @@ const ROUTE = [
   {id:'r5',d:24,t:'19:30',lat:34.6720,lng:135.5010,title:'散場 → 回心齋橋（串処かりや）',desc:'宵宮結束，往南撤離。',type:'move'},
   {id:'r6',d:25,t:'15:30',lat:34.6660,lng:135.5010,title:'難波 VASARA 浴衣著裝',desc:'15:30–16:40 著裝。',type:'yukata'},
   {id:'r7',d:25,t:'16:40',lat:34.7050,lng:135.5153,title:'難波→御堂筋→梅田→JR環狀→桜ノ宮',desc:'16:40–17:30，木屐慢行預留 50 分。',type:'move'},
-  {id:'r8',d:25,t:'17:30',lat:34.7025,lng:135.5182,title:'源八橋西岸卡位',desc:'帶野餐墊；一人顧位、一人去東岸屋台買晚餐。',type:'hanabi'},
-  {id:'r9',d:25,t:'19:30',lat:34.7025,lng:135.5182,title:'花火近景',desc:'19:30–20:50 頭頂近景。',type:'hanabi'},
-  {id:'r10',d:25,t:'20:50',lat:34.7025,lng:135.5182,title:'原地等待人潮散去',desc:'20:50–21:10 千萬別衝。',type:'wait'},
+  {id:'r8',d:25,t:'17:30',lat:34.7030,lng:135.5188,title:'源八橋西岸 卡位',desc:'帶野餐墊；一人顧位、一人去東岸屋台買晚餐。',type:'hanabi'},
+  {id:'r9',d:25,t:'19:30',lat:34.7030,lng:135.5188,title:'🎆 花火近景（源八橋西岸＝我的觀賞點）',desc:'19:30–20:50 頭頂近景。這裡就是你看煙火的位置。',type:'hanabi'},
+  {id:'r10',d:25,t:'20:50',lat:34.7030,lng:135.5188,title:'原地等待人潮散去',desc:'20:50–21:10 千萬別衝。',type:'wait'},
   {id:'r11',d:25,t:'21:10',lat:34.6970,lng:135.5340,title:'沿東岸南行步行至京橋',desc:'15–20 分，絕不進桜ノ宮駅。京橋→長堀鶴見綠地線→長堀橋直達。',type:'move'},
 ];
 
@@ -502,24 +502,51 @@ function rebuildRoute(){
   if(!mLayers.route) return;
   mLayers.route.clearLayers();
   const activeIdx=currentRouteIndex();
-  const seen={};
   const shown = ROUTE.filter(r=> routeDay==='both' || r.d===routeDay);
+  // 把「同一地點的連續時段」合併成一個地圖標記（清單仍分開列）
+  const groups=[];
   shown.forEach(r=>{
-    const gi=ROUTE.indexOf(r);
-    // 讓完全重疊的點稍微散開，避免疊成一坨
-    const key=r.lat.toFixed(4)+','+r.lng.toFixed(4);
-    const n=(seen[key]=(seen[key]||0)+1)-1;
-    const off=n*0.00055;
-    const done=isChecked(r.id);
-    let cls='route-dot'; if(gi===activeIdx) cls+=' active'; else if(done) cls+=' done';
-    const mk=L.marker([r.lat+off,r.lng+off],{icon:L.divIcon({className:'',html:`<div class="${cls}">${done?'✓':(gi+1)}</div>`,iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-16]}),zIndexOffset:1000});
-    mk.on('click',()=>openRoutePoint(r,gi)); mLayers.route.addLayer(mk);
+    const last=groups[groups.length-1];
+    if(last && last[0].lat===r.lat && last[0].lng===r.lng) last.push(r);
+    else groups.push([r]);
+  });
+  groups.forEach(g=>{
+    const gi=ROUTE.indexOf(g[0]);
+    const nums=g.map(x=>ROUTE.indexOf(x)+1);
+    const label=g.length>1 ? nums[0]+'–'+nums[nums.length-1] : String(gi+1);
+    const allDone=g.every(x=>isChecked(x.id));
+    const activeHere=g.some(x=>ROUTE.indexOf(x)===activeIdx);
+    const isHanabiSpot=g.some(x=>x.type==='hanabi');
+    let mk;
+    if(isHanabiSpot){
+      // 你的花火觀賞點：醒目標記
+      mk=L.marker([g[0].lat,g[0].lng],{zIndexOffset:1600,icon:L.divIcon({className:'',html:
+        `<div style="position:relative"><div style="background:#e5484d;border:3px solid #fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 10px rgba(0,0,0,.5)">🎆</div>
+         <div style="position:absolute;top:38px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#e5484d;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:9px;box-shadow:0 1px 4px rgba(0,0,0,.5)">我的觀賞點</div></div>`,
+        iconSize:[36,36],iconAnchor:[18,18]})});
+    }else{
+      let cls='route-dot'; if(activeHere) cls+=' active'; else if(allDone) cls+=' done';
+      mk=L.marker([g[0].lat,g[0].lng],{zIndexOffset:1000,icon:L.divIcon({className:'',html:`<div class="${cls}">${allDone?'✓':label}</div>`,iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-16]})});
+    }
+    mk.on('click',()=>openRouteGroup(g)); mLayers.route.addLayer(mk);
   });
   const days = routeDay==='both'?[24,25]:[routeDay];
   days.forEach(day=>{
     const seg=ROUTE.filter(r=>r.d===day).map(r=>[r.lat,r.lng]);
     if(seg.length>1) mLayers.route.addLayer(L.polyline(seg,{color:LAYERS.route.color,weight:3,opacity:.6,dashArray:'6 7'}));
   });
+}
+function openRouteGroup(g){
+  if(g.length===1){ openRoutePoint(g[0],ROUTE.indexOf(g[0])); return; }
+  const body=g.map(r=>{
+    const done=isChecked(r.id);
+    return `<div class="route-item ${done?'done':''}" data-id="${r.id}"><div class="rtime">${r.t}</div>
+      <div class="rmain"><div class="rt">${r.title}</div><div class="rd">${r.desc}</div></div>
+      <div class="rchk"><button class="chkbtn ${done?'done':''}" data-chk="${r.id}">${done?'✓':'打卡'}</button></div></div>`;
+  }).join('');
+  openSheet('🧭 同一地點的行程',
+    `<div class="info-block"><p>這個位置在你的行程裡有 <b>${g.length}</b> 個時段（同一地點、不同時間）：</p></div>${body}`);
+  bindRouteItems();
 }
 function applyLayerVisibility(){
   if(!map) return;
@@ -574,7 +601,8 @@ function openMatsuri(p){
 }
 function openYatai(p){
   openSheet(`🍢 ${p.name}`,
-   `<div class="info-block"><span class="badge" style="background:${p.color};color:#111">${p.level}</span><p style="margin-top:8px">${p.info}</p></div>
+   `<div class="info-block"><span class="badge" style="background:${p.color};color:#111">${p.level}</span><p style="margin-top:8px">${p.info}</p>
+      <p style="margin-top:6px;font-size:.72rem;color:var(--muted)">※ 色塊為<b>示意範圍</b>（非精確測繪），實際攤位以現場為準。</p></div>
     ${checkinBtnHtml('yt-'+p.id)}`);
   bindCheckin('yt-'+p.id);
 }
@@ -786,24 +814,35 @@ function gpsError(err){
 function gpsHelp(kind){
   const common=`<div class="info-block" style="border-color:var(--green)"><h4>✅ 不定位也完全能用</h4>
     <p style="color:var(--text)">所有打卡都能<b>手動</b>按；行程、倒數、現在去哪、情報圖層都不受影響。定位只是「自動打卡＋顯示你到下一站的距離方位」的加分功能。</p></div>`;
-  let body;
+  let head;
   if(kind==='inapp'){
-    body=`<div class="info-block" style="border-color:var(--accent2)"><h4>📲 你可能在「App 內建瀏覽器」開啟</h4>
+    head=`<div class="info-block" style="border-color:var(--accent2)"><h4>📲 你可能在「App 內建瀏覽器」開啟</h4>
       <p>在 LINE／IG／FB／Messenger 等 App 內開網頁時，系統會直接擋掉定位（不會跳出詢問）。</p>
-      <p style="margin-top:6px;color:var(--text)"><b>解法：</b>點右上角「⋯」→ 選「<b>在 Safari / Chrome 開啟</b>」，再按一次定位即可。</p></div>${common}`;
+      <p style="margin-top:6px;color:var(--text)"><b>解法：</b>點右上角「⋯」→ 選「<b>在 Safari / Chrome 開啟</b>」，再按一次定位即可。</p></div>`;
   }else if(kind==='insecure'){
-    body=`<div class="info-block" style="border-color:var(--accent2)"><h4>🔒 需要 https 網頁</h4>
-      <p>目前網址不是 https，瀏覽器會禁止定位。用 GitHub Pages（https）開啟即可。</p></div>${common}`;
+    head=`<div class="info-block" style="border-color:var(--accent2)"><h4>🔒 需要 https 網頁</h4>
+      <p>目前網址不是 https，瀏覽器會禁止定位。請用 GitHub Pages 的 https 網址開啟。</p></div>`;
   }else{
-    body=`<div class="info-block" style="border-color:var(--accent2)"><h4>📍 定位被系統擋住（你不一定按了拒絕）</h4>
+    head=`<div class="info-block" style="border-color:var(--accent2)"><h4>📍 定位被系統擋住（你不一定按了拒絕）</h4>
       <p>「權限被拒」常常不是你手動按的，多半是下列設定：</p>
       <ul style="margin-top:6px">
-        <li><b>iOS</b>：設定 → 隱私與安全性 → 定位服務 → 要<b>開啟</b>，且「網站」/Safari 設為「詢問」或「使用 App 期間」</li>
-        <li><b>網站權限</b>：網址列旁 🔒 或 ⓘ → 網站設定 → 位置 → 改為<b>允許</b>，再重新整理</li>
+        <li><b>iOS</b>：設定 → 隱私與安全性 → 定位服務 → 要<b>開啟</b>，且下方「Safari 網站」設為「詢問」或「使用 App 期間」</li>
+        <li><b>網站權限</b>：網址列旁 ⓐＡ 或 ⓘ → 網站設定 → 位置 → 改為<b>允許</b>，再重新整理</li>
         <li><b>Android Chrome</b>：⋮ → 設定 → 網站設定 → 位置 → 允許</li>
-      </ul></div>${common}`;
+      </ul></div>`;
   }
-  openSheet('📍 定位無法使用',body);
+  const diag=`<div class="info-block"><h4>🔧 定位診斷（截圖給我即可判斷）</h4><ul>
+     <li>網址協定：<b>${location.protocol}</b></li>
+     <li>安全連線 https：<b>${window.isSecureContext?'是 ✓':'否 ✗（定位會被禁止）'}</b></li>
+     <li>App內建瀏覽器/內嵌框架：<b>${inAppBrowser()?'是 ← 很可能是主因':'否'}</b></li>
+     <li>系統權限狀態：<b id="permState">查詢中…</b></li>
+   </ul></div>`;
+  openSheet('📍 定位無法使用',head+diag+common);
+  if(navigator.permissions&&navigator.permissions.query){
+    navigator.permissions.query({name:'geolocation'})
+      .then(r=>{ const e=document.getElementById('permState'); if(e) e.textContent=({granted:'已允許（granted）',denied:'被拒絕（denied）',prompt:'尚未決定（prompt）'}[r.state]||r.state); })
+      .catch(()=>{ const e=document.getElementById('permState'); if(e) e.textContent='無法查詢'; });
+  }else{ const e=document.getElementById('permState'); if(e) e.textContent='此瀏覽器不支援查詢'; }
 }
 function placeGps(){
   if(!gpsLatLng) return;
