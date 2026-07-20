@@ -1,487 +1,944 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chang Tongxun — Architecture Designer</title>
-  <style>
-    /* ── Reset & Base ── */
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0e1117">
+<title>大阪天神祭 情報地圖</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+/* ── Reset & Base ── */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0e1117; --surface:#161b22; --surface2:#1f2630; --line:#2a323d;
+  --text:#e8edf2; --muted:#8b98a8; --accent:#e8552f; --accent2:#ffb84d;
+  --green:#2ea043; --yellow:#d9a520; --red:#e5484d;
+  --blue:#3b82f6; --purple:#a855f7; --route:#22d3ee;
+  --shadow:0 4px 18px rgba(0,0,0,.45);
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  background:var(--bg); color:var(--text); line-height:1.5;
+  -webkit-font-smoothing:antialiased; overscroll-behavior:none;
+}
+button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:none}
+.hidden{display:none!important}
 
-    :root {
-      --clr-bg:      #f5f3f0;
-      --clr-surface:  #ffffff;
-      --clr-text:     #1a1a1a;
-      --clr-muted:    #6b6b6b;
-      --clr-accent:   #b08d57;
-      --clr-dark:     #1a1a1a;
-      --font-sans:    'Helvetica Neue', Arial, 'Noto Sans TC', sans-serif;
-      --font-serif:   'Georgia', 'Noto Serif TC', serif;
-      --max-w:        1200px;
-      --transition:   .35s cubic-bezier(.25,.8,.25,1);
-    }
+/* ── Top status bar ── */
+#topbar{
+  position:fixed; top:0; left:0; right:0; z-index:1200;
+  background:var(--surface); border-bottom:1px solid var(--line);
+  padding:calc(var(--safe-top) + 8px) 12px 8px; box-shadow:var(--shadow);
+}
+#topbar .row1{display:flex;align-items:center;gap:8px;justify-content:space-between}
+#clock{font-variant-numeric:tabular-nums;font-weight:700;font-size:1.15rem;letter-spacing:.5px}
+#clock .day{font-size:.72rem;color:var(--accent2);font-weight:600;margin-left:6px}
+#taskLine{margin-top:5px;display:flex;align-items:center;gap:8px;font-size:.86rem}
+#taskLine .tag{font-size:.64rem;background:var(--accent);color:#fff;padding:2px 7px;border-radius:5px;font-weight:700;flex-shrink:0}
+#taskLine .txt{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#countdown{margin-top:4px;font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+#countdown b{color:var(--accent2);font-variant-numeric:tabular-nums}
+#topTools{display:flex;gap:6px}
+.iconbtn{width:34px;height:34px;border-radius:8px;background:var(--surface2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:1rem}
+.iconbtn:active{background:var(--accent)}
 
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: var(--font-sans);
-      background: var(--clr-bg);
-      color: var(--clr-text);
-      line-height: 1.7;
-      -webkit-font-smoothing: antialiased;
-    }
+/* ── Map ── */
+#map{position:absolute;top:0;bottom:0;left:0;right:0;background:#0a0d12;z-index:1}
+.leaflet-container{background:#0a0d12;font-family:inherit}
+.leaflet-popup-content-wrapper{background:var(--surface2);color:var(--text);border-radius:12px;box-shadow:var(--shadow)}
+.leaflet-popup-tip{background:var(--surface2)}
+.leaflet-popup-content{margin:12px 14px;font-size:.85rem;line-height:1.55}
+.leaflet-popup-content b{color:var(--accent2)}
+.leaflet-bar a{background:var(--surface2);color:var(--text);border-color:var(--line)}
+.leaflet-control-attribution{background:rgba(15,18,24,.7)!important;color:var(--muted)!important;font-size:9px!important}
+.leaflet-control-attribution a{color:var(--muted)!important}
 
-    /* ── Navigation ── */
-    nav {
-      position: fixed; top: 0; left: 0; width: 100%;
-      z-index: 100;
-      background: rgba(245,243,240,.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(0,0,0,.06);
-      transition: var(--transition);
-    }
-    .nav-inner {
-      max-width: var(--max-w);
-      margin: 0 auto;
-      padding: 0 2rem;
-      height: 72px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .nav-logo {
-      font-size: 1.1rem; font-weight: 700; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--clr-text); text-decoration: none;
-    }
-    .nav-logo span { color: var(--clr-accent); }
-    .nav-links { display: flex; gap: 2.5rem; list-style: none; }
-    .nav-links a {
-      text-decoration: none; color: var(--clr-muted);
-      font-size: .85rem; letter-spacing: .06em; text-transform: uppercase;
-      position: relative; transition: color var(--transition);
-    }
-    .nav-links a::after {
-      content: ''; position: absolute; bottom: -4px; left: 0;
-      width: 0; height: 1.5px; background: var(--clr-accent);
-      transition: width var(--transition);
-    }
-    .nav-links a:hover { color: var(--clr-text); }
-    .nav-links a:hover::after { width: 100%; }
+/* custom markers */
+.pin{display:flex;align-items:center;justify-content:center;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5);font-weight:700}
+.pin span{transform:rotate(45deg);font-size:12px;line-height:1}
+.route-dot{width:26px;height:26px;border-radius:50%;background:var(--route);border:3px solid #fff;color:#04222b;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.route-dot.active{background:var(--accent);color:#fff;animation:pulse 1.6s infinite}
+.route-dot.done{background:var(--green);color:#fff}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(232,85,47,.6)}70%{box-shadow:0 0 0 14px rgba(232,85,47,0)}100%{box-shadow:0 0 0 0 rgba(232,85,47,0)}}
+.gps-dot{width:18px;height:18px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 6px rgba(59,130,246,.25),0 2px 6px rgba(0,0,0,.5)}
 
-    /* ── Hero ── */
-    .hero {
-      min-height: 100vh;
-      display: flex; align-items: center; justify-content: center;
-      text-align: center; padding: 2rem;
-      background:
-        linear-gradient(180deg, rgba(245,243,240,0) 60%, var(--clr-bg) 100%),
-        linear-gradient(135deg, #e8e4de 0%, #d4cdc3 100%);
-    }
-    .hero-content { max-width: 720px; }
-    .hero-subtitle {
-      font-size: .85rem; letter-spacing: .25em; text-transform: uppercase;
-      color: var(--clr-accent); margin-bottom: 1.5rem; font-weight: 500;
-    }
-    .hero h1 {
-      font-family: var(--font-serif);
-      font-size: clamp(2.8rem, 6vw, 5rem);
-      font-weight: 400; line-height: 1.15;
-      margin-bottom: 1.5rem;
-    }
-    .hero p {
-      font-size: 1.1rem; color: var(--clr-muted);
-      max-width: 520px; margin: 0 auto 2.5rem;
-    }
-    .hero-cta {
-      display: inline-block; padding: .9rem 2.8rem;
-      border: 1.5px solid var(--clr-text); color: var(--clr-text);
-      text-decoration: none; font-size: .85rem; letter-spacing: .12em;
-      text-transform: uppercase; transition: var(--transition);
-    }
-    .hero-cta:hover {
-      background: var(--clr-text); color: var(--clr-bg);
-    }
+/* ── Fallback text mode ── */
+#fallback{position:absolute;top:0;bottom:0;left:0;right:0;z-index:5;background:var(--bg);overflow-y:auto;padding:0 0 120px;-webkit-overflow-scrolling:touch}
+#fallback .fb-inner{padding:14px}
+#fallback .fb-note{background:var(--surface2);border:1px solid var(--accent);border-radius:10px;padding:10px 12px;font-size:.78rem;color:var(--accent2);margin-bottom:12px}
+.fb-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.fb-card h3,.fb-card h4{font-size:.95rem;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+.fb-card .badge{font-size:.62rem;padding:2px 7px;border-radius:20px;font-weight:700}
+.fb-card ul{list-style:none;font-size:.82rem}
+.fb-card li{padding:3px 0;border-bottom:1px dashed var(--line);color:var(--muted)}
+.fb-card li:last-child{border:none}
+.fb-card li b{color:var(--text)}
+.fb-card p{font-size:.82rem;color:var(--muted)}
 
-    /* ── Section Shared ── */
-    section { padding: 7rem 2rem; }
-    .section-header {
-      text-align: center; margin-bottom: 4rem;
-    }
-    .section-header .label {
-      font-size: .78rem; letter-spacing: .25em; text-transform: uppercase;
-      color: var(--clr-accent); margin-bottom: .75rem;
-    }
-    .section-header h2 {
-      font-family: var(--font-serif);
-      font-size: clamp(2rem, 4vw, 2.8rem);
-      font-weight: 400;
-    }
+/* ── Layer control panel (bottom) ── */
+#layerBar{
+  position:fixed; left:0; right:0; bottom:0; z-index:1150;
+  background:var(--surface); border-top:1px solid var(--line);
+  padding:8px 8px calc(var(--safe-bot) + 8px); box-shadow:0 -4px 18px rgba(0,0,0,.4);
+}
+#layerScroll{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#layerScroll::-webkit-scrollbar{display:none}
+.layer-chip{flex-shrink:0;display:flex;align-items:center;gap:6px;background:var(--surface2);border:1.5px solid var(--line);border-radius:22px;padding:8px 13px;font-size:.8rem;font-weight:600;white-space:nowrap;transition:.15s}
+.layer-chip .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.layer-chip.off{opacity:.4;filter:grayscale(.6)}
+.layer-chip:active{transform:scale(.95)}
 
-    /* ── About ── */
-    .about { background: var(--clr-surface); }
-    .about-grid {
-      max-width: var(--max-w); margin: 0 auto;
-      display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
-      align-items: center;
-    }
-    .about-image {
-      aspect-ratio: 3/4; background: linear-gradient(135deg, #d4cdc3, #b8b0a4);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 4rem; color: rgba(255,255,255,.5);
-      border-radius: 2px;
-    }
-    .about-text h3 {
-      font-family: var(--font-serif);
-      font-size: 1.6rem; font-weight: 400; margin-bottom: 1.5rem;
-    }
-    .about-text p {
-      color: var(--clr-muted); margin-bottom: 1.2rem; font-size: .98rem;
-    }
-    .stats {
-      display: flex; gap: 3rem; margin-top: 2.5rem;
-      padding-top: 2rem; border-top: 1px solid rgba(0,0,0,.08);
-    }
-    .stat-number {
-      font-family: var(--font-serif);
-      font-size: 2.2rem; color: var(--clr-accent); display: block;
-    }
-    .stat-label {
-      font-size: .78rem; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--clr-muted);
-    }
+/* ── Floating action buttons ── */
+#fabWrap{position:fixed;right:12px;z-index:1140;bottom:calc(var(--safe-bot) + 74px);display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+.fab{border-radius:28px;box-shadow:var(--shadow);font-weight:700;display:flex;align-items:center;gap:7px;justify-content:center}
+.fab.main{background:var(--accent);color:#fff;padding:14px 18px;font-size:.92rem}
+.fab.round{width:48px;height:48px;background:var(--surface2);border:1px solid var(--line);font-size:1.2rem;padding:0}
+.fab.round.active{background:var(--blue)}
+.fab:active{transform:scale(.94)}
 
-    /* ── Works ── */
-    .works { background: var(--clr-bg); }
-    .works-grid {
-      max-width: var(--max-w); margin: 0 auto;
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 2rem;
-    }
-    .work-card {
-      position: relative; overflow: hidden;
-      background: var(--clr-surface);
-      border-radius: 2px;
-      transition: transform var(--transition), box-shadow var(--transition);
-    }
-    .work-card:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 20px 60px rgba(0,0,0,.08);
-    }
-    .work-thumb {
-      aspect-ratio: 4/3; overflow: hidden;
-    }
-    .work-thumb-inner {
-      width: 100%; height: 100%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2.5rem; color: rgba(255,255,255,.6);
-      transition: transform var(--transition);
-    }
-    .work-card:hover .work-thumb-inner { transform: scale(1.05); }
-    .work-info { padding: 1.8rem; }
-    .work-category {
-      font-size: .72rem; letter-spacing: .18em; text-transform: uppercase;
-      color: var(--clr-accent); margin-bottom: .5rem;
-    }
-    .work-info h3 {
-      font-family: var(--font-serif);
-      font-size: 1.25rem; font-weight: 400; margin-bottom: .5rem;
-    }
-    .work-info p {
-      font-size: .88rem; color: var(--clr-muted);
-    }
+/* ── Bottom sheet / modal ── */
+#sheetMask{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.25s}
+#sheetMask.show{opacity:1;pointer-events:auto}
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:1310;background:var(--surface);border-radius:20px 20px 0 0;max-height:86vh;transform:translateY(105%);transition:transform .3s cubic-bezier(.25,.9,.3,1);display:flex;flex-direction:column;box-shadow:0 -8px 30px rgba(0,0,0,.5)}
+#sheet.show{transform:translateY(0)}
+#sheet .grip{width:42px;height:5px;border-radius:5px;background:var(--line);margin:10px auto 4px}
+#sheet .sheet-head{display:flex;align-items:center;justify-content:space-between;padding:6px 16px 10px;border-bottom:1px solid var(--line)}
+#sheet .sheet-head h2{font-size:1.05rem}
+#sheet .sheet-body{overflow-y:auto;padding:14px 16px calc(var(--safe-bot) + 20px);-webkit-overflow-scrolling:touch}
+.closex{width:32px;height:32px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--muted)}
 
-    /* ── Contact ── */
-    .contact { background: var(--clr-dark); color: #fff; }
-    .contact .section-header h2 { color: #fff; }
-    .contact .label { color: var(--clr-accent); }
-    .contact-inner {
-      max-width: 680px; margin: 0 auto; text-align: center;
-    }
-    .contact-inner > p {
-      color: rgba(255,255,255,.55); margin-bottom: 3rem; font-size: 1.05rem;
-    }
-    .contact-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
-      margin-bottom: 3rem;
-    }
-    .contact-item { text-align: center; }
-    .contact-icon {
-      width: 48px; height: 48px; margin: 0 auto 1rem;
-      border: 1.5px solid rgba(255,255,255,.15); border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem;
-      transition: var(--transition);
-    }
-    .contact-item:hover .contact-icon {
-      border-color: var(--clr-accent); background: var(--clr-accent);
-    }
-    .contact-item h4 {
-      font-size: .75rem; letter-spacing: .15em; text-transform: uppercase;
-      color: rgba(255,255,255,.4); margin-bottom: .4rem; font-weight: 400;
-    }
-    .contact-item a, .contact-item span {
-      color: #fff; text-decoration: none; font-size: .95rem;
-      transition: color var(--transition);
-    }
-    .contact-item a:hover { color: var(--clr-accent); }
-    .contact-form {
-      display: flex; gap: 1rem; max-width: 480px; margin: 0 auto;
-    }
-    .contact-form input {
-      flex: 1; padding: .9rem 1.2rem;
-      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
-      color: #fff; font-size: .92rem; font-family: var(--font-sans);
-      outline: none; transition: border-color var(--transition);
-    }
-    .contact-form input::placeholder { color: rgba(255,255,255,.3); }
-    .contact-form input:focus { border-color: var(--clr-accent); }
-    .contact-form button {
-      padding: .9rem 2rem; background: var(--clr-accent);
-      border: none; color: #fff; font-size: .82rem;
-      letter-spacing: .12em; text-transform: uppercase;
-      font-family: var(--font-sans); cursor: pointer;
-      transition: background var(--transition);
-    }
-    .contact-form button:hover { background: #9a7a48; }
+/* generic components inside sheet */
+.rec-card{background:linear-gradient(135deg,#1f2630,#161b22);border:1px solid var(--accent);border-radius:14px;padding:15px;margin-bottom:12px}
+.rec-card .why{font-size:.8rem;color:var(--muted);margin-top:6px}
+.rec-card .title{font-size:1.15rem;font-weight:800;color:var(--accent2)}
+.rec-card .go{margin-top:10px;background:var(--accent);color:#fff;padding:8px 14px;border-radius:8px;font-weight:700;font-size:.82rem;display:inline-block}
+.mini-h{font-size:.72rem;color:var(--muted);letter-spacing:1px;margin:14px 0 7px}
 
-    /* ── Footer ── */
-    footer {
-      background: var(--clr-dark);
-      border-top: 1px solid rgba(255,255,255,.06);
-      padding: 2rem; text-align: center;
-      font-size: .8rem; color: rgba(255,255,255,.3);
-      letter-spacing: .05em;
-    }
+.route-item{display:flex;gap:10px;padding:11px;border-radius:12px;background:var(--surface2);margin-bottom:8px;border:1px solid var(--line)}
+.route-item.now{border-color:var(--accent);background:linear-gradient(135deg,#241a17,#1f2630)}
+.route-item.done{opacity:.6}
+.route-item .rtime{font-weight:800;font-size:.82rem;color:var(--accent2);flex-shrink:0;width:52px;font-variant-numeric:tabular-nums}
+.route-item .rmain{flex:1;min-width:0}
+.route-item .rmain .rt{font-weight:700;font-size:.9rem}
+.route-item .rmain .rd{font-size:.76rem;color:var(--muted);margin-top:2px}
+.route-item .rchk{flex-shrink:0}
+.chkbtn{background:var(--surface);border:1.5px solid var(--line);border-radius:20px;padding:6px 11px;font-size:.72rem;font-weight:700;color:var(--muted)}
+.chkbtn.done{background:var(--green);border-color:var(--green);color:#fff}
 
-    /* ── Mobile Menu ── */
-    .menu-toggle {
-      display: none; background: none; border: none;
-      cursor: pointer; padding: .5rem;
-    }
-    .menu-toggle span {
-      display: block; width: 22px; height: 1.5px;
-      background: var(--clr-text); margin: 5px 0;
-      transition: var(--transition);
-    }
+.achv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.achv{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:14px 10px;text-align:center}
+.achv.got{border-color:var(--accent2);background:linear-gradient(135deg,#2a2418,#1f2630)}
+.achv .emoji{font-size:1.9rem;filter:grayscale(1);opacity:.4}
+.achv.got .emoji{filter:none;opacity:1}
+.achv .an{font-size:.82rem;font-weight:700;margin-top:5px}
+.achv .ad{font-size:.66rem;color:var(--muted);margin-top:3px;line-height:1.35}
+.achv .prog{font-size:.66rem;color:var(--accent2);margin-top:4px;font-weight:700}
 
-    /* ── Responsive ── */
-    @media (max-width: 768px) {
-      .menu-toggle { display: block; }
-      .nav-links {
-        position: fixed; top: 72px; left: 0; width: 100%;
-        background: rgba(245,243,240,.97); backdrop-filter: blur(12px);
-        flex-direction: column; align-items: center;
-        padding: 2rem 0; gap: 1.5rem;
-        transform: translateY(-120%);
-        transition: transform var(--transition);
-      }
-      .nav-links.open { transform: translateY(0); }
-      .about-grid { grid-template-columns: 1fr; gap: 2.5rem; }
-      .works-grid { grid-template-columns: 1fr; }
-      .contact-grid { grid-template-columns: 1fr; }
-      .contact-form { flex-direction: column; }
-      .stats { gap: 2rem; }
-      .hero h1 { font-size: 2.4rem; }
-    }
+.remind-item{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--line);font-size:.86rem}
+.remind-item:last-child{border:none}
+.remind-item .ck{width:22px;height:22px;border-radius:6px;border:2px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.8rem}
+.remind-item.on .ck{background:var(--green);border-color:var(--green)}
+.remind-item.on .lbl{text-decoration:line-through;color:var(--muted)}
 
-    /* ── Scroll Animations ── */
-    .fade-up {
-      opacity: 0; transform: translateY(30px);
-      transition: opacity .8s ease, transform .8s ease;
-    }
-    .fade-up.visible { opacity: 1; transform: translateY(0); }
-  </style>
+.info-block{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.info-block h4{font-size:.9rem;margin-bottom:6px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.info-block .badge{font-size:.6rem;padding:2px 7px;border-radius:20px;font-weight:700}
+.info-block p,.info-block li{font-size:.82rem;color:var(--muted)}
+.info-block ul{list-style:none;margin-top:4px}
+.info-block li{padding:3px 0}
+.info-block li b{color:var(--text)}
+.pill{display:inline-block;font-size:.62rem;padding:2px 8px;border-radius:20px;font-weight:700;margin:2px 3px 0 0}
+
+/* time simulator */
+#simPanel .simrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.simbtn{flex:1;min-width:70px;background:var(--surface2);border:1.5px solid var(--line);border-radius:10px;padding:9px 6px;font-size:.72rem;font-weight:700;text-align:center}
+.simbtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+#simSlider{width:100%;margin:8px 0}
+input[type=range]{accent-color:var(--accent)}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:calc(var(--safe-bot) + 150px);transform:translateX(-50%) translateY(20px);z-index:1400;background:var(--surface2);border:1px solid var(--accent2);color:var(--text);padding:12px 18px;border-radius:14px;font-size:.86rem;font-weight:600;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.3s;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast .em{font-size:1.4rem;display:block;margin-bottom:3px}
+
+/* alert banner */
+#alertBanner{position:fixed;left:8px;right:8px;top:calc(var(--safe-top) + 92px);z-index:1180;background:linear-gradient(135deg,var(--red),#b02a2f);color:#fff;border-radius:12px;padding:11px 14px;font-size:.82rem;font-weight:600;box-shadow:var(--shadow);display:flex;gap:9px;align-items:center;animation:slidein .4s}
+@keyframes slidein{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
+#alertBanner .x{margin-left:auto;font-size:1.2rem;opacity:.9}
+</style>
 </head>
 <body>
 
-  <!-- Navigation -->
-  <nav>
-    <div class="nav-inner">
-      <a href="#" class="nav-logo">Chang<span>.</span></a>
-      <button class="menu-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle menu">
-        <span></span><span></span><span></span>
-      </button>
-      <ul class="nav-links">
-        <li><a href="#about">關於我</a></li>
-        <li><a href="#works">作品集</a></li>
-        <li><a href="#contact">聯絡</a></li>
-      </ul>
+<!-- ── TOP BAR ── -->
+<div id="topbar">
+  <div class="row1">
+    <div id="clock">--:--<span class="day"></span></div>
+    <div id="topTools">
+      <button class="iconbtn" id="btnSim" title="時間模擬">🕒</button>
+      <button class="iconbtn" id="btnRemind" title="提醒清單">🎒</button>
+      <button class="iconbtn" id="btnAchv" title="成就集章">🏅</button>
     </div>
-  </nav>
+  </div>
+  <div id="taskLine"><span class="tag">任務</span><span class="txt">載入中…</span></div>
+  <div id="countdown"></div>
+</div>
 
-  <!-- Hero -->
-  <section class="hero">
-    <div class="hero-content">
-      <p class="hero-subtitle">Architecture Designer</p>
-      <h1>Chang Tongxun</h1>
-      <p>以空間為語言，構築人與環境之間的詩意對話。專注於永續設計、極簡美學與功能性的完美平衡。</p>
-      <a href="#works" class="hero-cta">探索作品</a>
-    </div>
-  </section>
+<!-- ── MAP ── -->
+<div id="map"></div>
 
-  <!-- About -->
-  <section class="about" id="about">
-    <div class="about-grid">
-      <div class="about-image fade-up">&#9635;</div>
-      <div class="about-text fade-up">
-        <h3>設計，是對生活的深刻理解</h3>
-        <p>
-          我是 Chang Tongxun，一位專注於建築與空間設計的設計師。
-          我相信優秀的建築不僅是結構的展現，更是人文精神與自然環境的融合。
-        </p>
-        <p>
-          多年來，我參與了住宅、商業空間與公共建築等多元類型的項目，
-          致力於在每個設計中融入在地文化與永續理念，
-          創造具有溫度且經得起時間考驗的空間。
-        </p>
-        <div class="stats">
-          <div>
-            <span class="stat-number">8+</span>
-            <span class="stat-label">年經驗</span>
-          </div>
-          <div>
-            <span class="stat-number">50+</span>
-            <span class="stat-label">完成項目</span>
-          </div>
-          <div>
-            <span class="stat-number">12</span>
-            <span class="stat-label">設計獎項</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+<!-- ── FALLBACK TEXT MODE ── -->
+<div id="fallback" class="hidden"><div class="fb-inner">
+  <div class="fb-note">📡 地圖圖磚載入失敗（現場網路壅塞）— 已切換為<b>文字情報模式</b>。以下依<b id="fbTime">目前時刻</b>提供重點。<button id="fbRetry" style="margin-left:6px;color:var(--accent2);text-decoration:underline">重試地圖</button></div>
+  <div id="fbContent"></div>
+</div></div>
 
-  <!-- Works -->
-  <section class="works" id="works">
-    <div class="section-header">
-      <p class="label">Portfolio</p>
-      <h2>精選作品</h2>
-    </div>
-    <div class="works-grid">
+<!-- ── ALERT BANNER ── -->
+<div id="alertBanner" class="hidden"></div>
 
-      <div class="work-card fade-up">
-        <div class="work-thumb">
-          <div class="work-thumb-inner" style="background:linear-gradient(135deg,#8a9b6e,#5c6e4f)">&#9878;</div>
-        </div>
-        <div class="work-info">
-          <p class="work-category">住宅設計</p>
-          <h3>山居雲舍</h3>
-          <p>隱於山林間的現代住宅，以大面積開窗框取自然風景，實現室內外空間的無縫銜接。</p>
-        </div>
-      </div>
+<!-- ── LAYER BAR ── -->
+<div id="layerBar"><div id="layerScroll"></div></div>
 
-      <div class="work-card fade-up">
-        <div class="work-thumb">
-          <div class="work-thumb-inner" style="background:linear-gradient(135deg,#7a8b9e,#4a5d72)">&#9962;</div>
-        </div>
-        <div class="work-info">
-          <p class="work-category">商業空間</p>
-          <h3>光合藝廊</h3>
-          <p>以光影為主題的藝術展覽空間，透過天窗與反射材質的運用，營造流動的光影體驗。</p>
-        </div>
-      </div>
+<!-- ── FABs ── -->
+<div id="fabWrap">
+  <button class="fab round" id="fabGps" title="定位">📍</button>
+  <button class="fab round" id="fabRoute" title="我的路線">🧭</button>
+  <button class="fab main" id="fabWhere">現在去哪 ➜</button>
+</div>
 
-      <div class="work-card fade-up">
-        <div class="work-thumb">
-          <div class="work-thumb-inner" style="background:linear-gradient(135deg,#b09070,#8a6e52)">&#9963;</div>
-        </div>
-        <div class="work-info">
-          <p class="work-category">公共建築</p>
-          <h3>水岸文化中心</h3>
-          <p>位於河畔的文化複合體，以流線型設計回應水域地景，成為城市的文化新地標。</p>
-        </div>
-      </div>
+<!-- ── BOTTOM SHEET ── -->
+<div id="sheetMask"></div>
+<div id="sheet">
+  <div class="grip"></div>
+  <div class="sheet-head"><h2 id="sheetTitle"></h2><button class="closex" id="sheetClose">✕</button></div>
+  <div class="sheet-body" id="sheetBody"></div>
+</div>
 
-      <div class="work-card fade-up">
-        <div class="work-thumb">
-          <div class="work-thumb-inner" style="background:linear-gradient(135deg,#9e8a7a,#72605a)">&#9961;</div>
-        </div>
-        <div class="work-info">
-          <p class="work-category">室內設計</p>
-          <h3>靜巷茶室</h3>
-          <p>融合東方禪意與現代極簡的茶道空間，以天然素材與留白手法，創造靜謐的品茗體驗。</p>
-        </div>
-      </div>
+<!-- ── TOAST ── -->
+<div id="toast"></div>
 
-      <div class="work-card fade-up">
-        <div class="work-thumb">
-          <div class="work-thumb-inner" style="background:linear-gradient(135deg,#6e8a7a,#4a6e5a)">&#9968;</div>
-        </div>
-        <div class="work-info">
-          <p class="work-category">永續設計</p>
-          <h3>綠穹生態辦公室</h3>
-          <p>獲得綠建築認證的辦公空間，結合垂直綠化、雨水回收與自然通風系統。</p>
-        </div>
-      </div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+"use strict";
+/* ============================================================
+   大阪天神祭 情報地圖  —  單檔 webapp
+   ============================================================ */
 
-      <div class="work-card fade-up">
-        <div class="work-thumb">
-          <div class="work-thumb-inner" style="background:linear-gradient(135deg,#a08878,#7a6258)">&#9970;</div>
-        </div>
-        <div class="work-info">
-          <p class="work-category">都市規劃</p>
-          <h3>新城街區再生計畫</h3>
-          <p>老舊街區的活化再生提案，保留歷史紋理的同時注入當代活力與公共開放空間。</p>
-        </div>
-      </div>
+/* ---------- 時間引擎（支援模擬） ---------- */
+const FEST_YEAR = 2026;
+let simOffset = null; // 若非 null，以此毫秒作為「現在」
 
-    </div>
-  </section>
+function now(){ return simOffset ? new Date(simOffset) : new Date(); }
+function festClock(d){
+  return { mo:d.getMonth()+1, day:d.getDate(), hm:d.getHours()*60+d.getMinutes(), h:d.getHours(), m:d.getMinutes() };
+}
+function isFestDay(d){ const f=festClock(d); return f.mo===7 && (f.day===24||f.day===25); }
+function isFestDayF(f){ return f.mo===7 && (f.day===24||f.day===25); }
+function pad(n){return String(n).padStart(2,'0')}
+function hm2str(h){return pad(Math.floor(h/60))+':'+pad(h%60)}
+function toMin(s){const [h,m]=s.split(':').map(Number);return h*60+m}
 
-  <!-- Contact -->
-  <section class="contact" id="contact">
-    <div class="section-header">
-      <p class="label">Contact</p>
-      <h2>與我聯繫</h2>
-    </div>
-    <div class="contact-inner">
-      <p>如果您對建築設計有任何想法或合作需求，歡迎與我聯繫。</p>
-      <div class="contact-grid">
-        <div class="contact-item">
-          <div class="contact-icon">&#9993;</div>
-          <h4>Email</h4>
-          <a href="mailto:hello@changtongxun.com">hello@changtongxun.com</a>
-        </div>
-        <div class="contact-item">
-          <div class="contact-icon">&#9742;</div>
-          <h4>電話</h4>
-          <span>+886 912 345 678</span>
-        </div>
-        <div class="contact-item">
-          <div class="contact-icon">&#9873;</div>
-          <h4>地點</h4>
-          <span>台北，台灣</span>
-        </div>
-      </div>
-      <form class="contact-form" onsubmit="event.preventDefault(); alert('感謝您的來信，我會盡快回覆！');">
-        <input type="email" placeholder="請輸入您的 Email" required>
-        <button type="submit">訂閱通知</button>
-      </form>
-    </div>
-  </section>
+/* ---------- 圖層定義 ---------- */
+const LAYERS = {
+  matsuri:{name:'祭事',   emoji:'⛩️', color:'#e8552f', on:true},
+  yatai:  {name:'屋台',   emoji:'🍢', color:'#ffb84d', on:true},
+  hanabi: {name:'花火觀賞',emoji:'🎆', color:'#a855f7', on:true},
+  station:{name:'車站',   emoji:'🚉', color:'#3b82f6', on:true},
+  crowd:  {name:'人潮預警',emoji:'🔥', color:'#e5484d', on:true},
+  route:  {name:'我的路線',emoji:'🧭', color:'#22d3ee', on:true},
+};
 
-  <!-- Footer -->
-  <footer>
-    &copy; 2026 Chang Tongxun. All rights reserved.
-  </footer>
+/* ---------- 祭事層 ---------- */
+const MATSURI = [
+  {id:'tenmangu', name:'大阪天滿宮', lat:34.6956, lng:135.5127, emoji:'⛩️',
+   sched:[
+     {d:24,t:'18:40',x:'催太鼓 宮入'},
+     {d:24,t:'19:00',x:'獅子舞 宮入'},
+     {d:24,t:'~19:30',x:'宵宮結束（散場）'},
+     {d:25,t:'14:00',x:'本宮祭'},
+     {d:25,t:'15:30',x:'陸渡御 出發'},
+   ], note:'神事主場。7/24 宵宮 18:30–19:45 境內爆滿。'},
+  {id:'okawa-fune', name:'大川 · 船渡御', lat:34.6985, lng:135.5188, emoji:'⛵',
+   sched:[{d:25,t:'18:00–21:00',x:'船渡御（約 100 艘）'}],
+   note:'御鳳輦與供奉船沿大川往返，與花火同時進行。'},
+  {id:'hanabi-zone', name:'花火施放帶', lat:34.6975, lng:135.5205, emoji:'🎆',
+   sched:[{d:25,t:'19:30–20:50',x:'奉納花火 約 3000 發'}],
+   note:'施放帶：櫻之宮公園～川崎公園（造幣局旁）大川一帶。⚠️ 7/24 沒有花火。'},
+];
 
-  <!-- Scroll Animation -->
-  <script>
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-        }
-      });
-    }, { threshold: 0.15 });
+/* ---------- 屋台層（範圍色塊） ---------- */
+const YATAI = [
+  {id:'y-shoutengai', name:'天滿宮境內＋天神橋筋商店街',
+   poly:[[34.6912,135.5108],[34.6912,135.5122],[34.6960,135.5133],[34.7010,135.5100],[34.7008,135.5088],[34.6955,135.5118]],
+   color:'#ffb84d', level:'密度最高',
+   info:'僅天三以南有屋台。宵宮 15:00 起／本宮 12:00–22:00，尖峰 17:00–20:00。'},
+  {id:'y-okawa', name:'大川沿岸（東岸最密）',
+   poly:[[34.6968,135.5165],[34.7050,135.5195],[34.7060,135.5210],[34.6975,135.5185]],
+   color:'#e8a33d', level:'邊吃邊看花火',
+   info:'東岸最密、櫻之宮公園南側。下午開張，可邊吃邊等花火。'},
+  {id:'y-minamitemma', name:'南天滿公園（天滿橋旁）',
+   poly:[[34.6905,135.5148],[34.6905,135.5170],[34.6922,135.5172],[34.6922,135.5148]],
+   color:'#d98a2d', level:'規模較小',
+   info:'天滿橋旁，規模較小，人潮相對緩和。'},
+];
 
-    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+/* ---------- 花火觀賞層（三級） ---------- */
+const HANABI = [
+  {id:'h-temmabashi',name:'天滿橋（付費會場）',lat:34.6892,lng:135.5158,tier:'paid',view:'中～遠景',arrive:'憑票入場',crowd:'有座位'},
+  {id:'h-zoheikyoku',name:'造幣局對岸（付費）',lat:34.6952,lng:135.5195,tier:'paid',view:'中景',arrive:'憑票',crowd:'有座位'},
+  {id:'h-sempokan',name:'泉布觀東側（付費）',lat:34.6990,lng:135.5185,tier:'paid',view:'頭頂近景',arrive:'憑票',crowd:'有座位'},
+  {id:'h-enkei',name:'円形廣場（付費）',lat:34.6965,lng:135.5178,tier:'paid',view:'中景',arrive:'憑票',crowd:'有座位'},
+  {id:'h-sakura-mizu',name:'櫻之宮／ふれあいの水辺（付費）',lat:34.7015,lng:135.5205,tier:'paid',view:'頭頂近景',arrive:'憑票',crowd:'有座位'},
+  {id:'h-genpachi',name:'源八橋周邊',lat:34.7025,lng:135.5182,tier:'free',view:'頭頂近景',arrive:'中午起佔位戰',crowd:'極擁擠'},
+  {id:'h-ginbashi',name:'桜宮橋＝銀橋',lat:34.6976,lng:135.5206,tier:'free',view:'近景',arrive:'18:00 起管制，17:30 前需定位',crowd:'極擁擠'},
+  {id:'h-miyakojima',name:'都島大橋',lat:34.7082,lng:135.5232,tier:'hidden',view:'遠景',arrive:'19:00 前',crowd:'中'},
+  {id:'h-oap',name:'OAP 木製デッキ',lat:34.6978,lng:135.5152,tier:'hidden',view:'中景',arrive:'18:30 前',crowd:'中'},
+  {id:'h-sakurashrine',name:'櫻宮神社',lat:34.7022,lng:135.5214,tier:'hidden',view:'中～近景',arrive:'18:30 前',crowd:'中'},
+  {id:'h-fujita',name:'藤田邸跡公園前',lat:34.7002,lng:135.5176,tier:'hidden',view:'中景',arrive:'18:30 前',crowd:'低～中'},
+];
+const HTIER = {
+  paid:  {name:'付費會場',color:'#a855f7',emoji:'🎫'},
+  free:  {name:'免費近景',color:'#e5484d',emoji:'🔥'},
+  hidden:{name:'穴場',    color:'#2ea043',emoji:'🌿'},
+};
 
-    // Close mobile menu on link click
-    document.querySelectorAll('.nav-links a').forEach(link => {
-      link.addEventListener('click', () => {
-        document.querySelector('.nav-links').classList.remove('open');
-      });
+/* ---------- 車站層 ---------- */
+const STATION = [
+  {id:'s-minamimori',name:'南森町',lat:34.6950,lng:135.5095,status:'avoid',day:'兩日全避',note:'天滿宮最近站，宵宮/本宮皆爆滿。'},
+  {id:'s-sakuranomiya',name:'桜ノ宮',lat:34.7050,lng:135.5153,status:'avoid',day:'散場管制最嚴',note:'花火散場入場管制最嚴，絕不要在此回程。'},
+  {id:'s-temmabashi',name:'天滿橋',lat:34.6890,lng:135.5156,status:'warn',day:'7/25 16:00 起管制',note:'京阪／谷町線，本宮傍晚起管制。'},
+  {id:'s-tenmangu',name:'大阪天滿宮',lat:34.6945,lng:135.5116,status:'warn',day:'臨近會場',note:'JR東西線，靠近核心區，尖峰擁擠。'},
+  {id:'s-temma',name:'天滿',lat:34.7055,lng:135.5090,status:'warn',day:'環狀線臨近',note:'環狀線，靠近北端會場。'},
+  {id:'s-kitahama',name:'北浜',lat:34.6900,lng:135.5085,status:'ok',day:'回程疏散口',note:'堺筋線／京阪，往南疏散較順。'},
+  {id:'s-yodoyabashi',name:'淀屋橋',lat:34.6925,lng:135.5010,status:'ok',day:'回程疏散口',note:'御堂筋線／京阪，回程疏散口。'},
+  {id:'s-kyobashi',name:'京橋',lat:34.6970,lng:135.5340,status:'best',day:'大站疏散力強',note:'JR／京阪／地下鐵大站，散場最推薦回程口。'},
+];
+const SSTAT={avoid:{c:'#e5484d',t:'全力避開'},warn:{c:'#d9a520',t:'管制/擁擠'},ok:{c:'#3b82f6',t:'疏散口'},best:{c:'#2ea043',t:'推薦回程'}};
+
+/* ---------- 人潮預警層（規則式，依時刻變色） ---------- */
+const CROWD = [
+  {id:'c-shoutengai',name:'天神橋筋商店街',lat:34.6975,lng:135.5108,r:520,
+   win:[{d:24,from:'17:00',to:'21:00',lv:'red',note:'單向通行管制'},
+        {d:25,from:'17:00',to:'20:00',lv:'red',note:'單向通行'},
+        {d:24,from:'15:00',to:'17:00',lv:'yellow'},{d:25,from:'12:00',to:'17:00',lv:'yellow'}]},
+  {id:'c-keidai',name:'天滿宮境內',lat:34.6956,lng:135.5127,r:160,
+   win:[{d:24,from:'18:30',to:'19:45',lv:'red',note:'催太鼓/獅子舞卡位'},
+        {d:24,from:'17:30',to:'18:30',lv:'yellow'},{d:25,from:'14:00',to:'16:00',lv:'yellow',note:'陸渡御'}]},
+  {id:'c-sakurapark',name:'櫻之宮公園核心草皮／銀橋',lat:34.7000,lng:135.5200,r:340,
+   win:[{d:25,from:'17:00',to:'21:00',lv:'red',note:'核心觀覽區'},
+        {d:25,from:'12:00',to:'17:00',lv:'yellow',note:'佔位戰進行中'}]},
+  {id:'c-sakura-st',name:'桜ノ宮駅・天滿橋駅',lat:34.7050,lng:135.5153,r:220,
+   win:[{d:25,from:'20:50',to:'22:30',lv:'red',note:'入場管制，最擁擠'}]},
+  {id:'c-okawa-all',name:'大川沿岸全域',lat:34.6985,lng:135.5185,r:600,
+   win:[{d:25,from:'20:50',to:'21:10',lv:'red',note:'散場第一波，原地等待最快'}]},
+  {id:'c-taxi',name:'全區叫車困難',lat:34.6975,lng:135.5155,r:900,faint:true,
+   win:[{d:25,from:'21:00',to:'22:30',lv:'red',note:'計程車叫不到'}]},
+];
+const LV={red:{c:'#e5484d',t:'紅',w:'極擁擠'},yellow:{c:'#d9a520',t:'黃',w:'漸擁擠'},green:{c:'#2ea043',t:'綠',w:'順暢'}};
+
+function crowdLevelAt(zone,f){
+  if(!isFestDayF(f)) return 'green';
+  let lv='green';
+  for(const w of zone.win){
+    if(w.d!==f.day) continue;
+    if(f.hm>=toMin(w.from) && f.hm<toMin(w.to)){
+      if(w.lv==='red') return 'red';
+      if(w.lv==='yellow') lv='yellow';
+    }
+  }
+  return lv;
+}
+function activeWindowNote(zone,f){
+  for(const w of zone.win){ if(w.d===f.day && f.hm>=toMin(w.from)&&f.hm<toMin(w.to)) return w.note||null; }
+  return null;
+}
+
+/* ---------- 我的路線層 ---------- */
+const ROUTE = [
+  {id:'r1',d:24,t:'16:30',lat:34.6740,lng:135.5065,title:'長堀橋 → 堺筋線 → 南森町',desc:'出發。搭堺筋線北上。',type:'move'},
+  {id:'r2',d:24,t:'17:00',lat:34.6935,lng:135.5112,title:'天神橋筋商店街 屋台晚餐',desc:'17:00–18:10。尖峰前先吃飽。',type:'yatai'},
+  {id:'r3',d:24,t:'18:20',lat:34.6956,lng:135.5127,title:'前進天滿宮境內卡位',desc:'18:20 進場，境內即將爆滿。',type:'matsuri'},
+  {id:'r4',d:24,t:'18:40',lat:34.6956,lng:135.5127,title:'催太鼓宮入 → 獅子舞宮入',desc:'18:40 催太鼓 → 19:00 獅子舞。',type:'matsuri'},
+  {id:'r5',d:24,t:'19:30',lat:34.6720,lng:135.5010,title:'散場 → 回心齋橋（串処かりや）',desc:'宵宮結束，往南撤離。',type:'move'},
+  {id:'r6',d:25,t:'15:30',lat:34.6660,lng:135.5010,title:'難波 VASARA 浴衣著裝',desc:'15:30–16:40 著裝。',type:'yukata'},
+  {id:'r7',d:25,t:'16:40',lat:34.7050,lng:135.5153,title:'難波→御堂筋→梅田→JR環狀→桜ノ宮',desc:'16:40–17:30，木屐慢行預留 50 分。',type:'move'},
+  {id:'r8',d:25,t:'17:30',lat:34.7025,lng:135.5182,title:'源八橋西岸卡位',desc:'帶野餐墊；一人顧位、一人去東岸屋台買晚餐。',type:'hanabi'},
+  {id:'r9',d:25,t:'19:30',lat:34.7025,lng:135.5182,title:'花火近景',desc:'19:30–20:50 頭頂近景。',type:'hanabi'},
+  {id:'r10',d:25,t:'20:50',lat:34.7025,lng:135.5182,title:'原地等待人潮散去',desc:'20:50–21:10 千萬別衝。',type:'wait'},
+  {id:'r11',d:25,t:'21:10',lat:34.6970,lng:135.5340,title:'沿東岸南行步行至京橋',desc:'15–20 分，絕不進桜ノ宮駅。京橋→長堀鶴見綠地線→長堀橋直達。',type:'move'},
+];
+
+/* ---------- 成就 ---------- */
+const ACHV = [
+  {id:'yomiya',emoji:'🏮',name:'宵宮見習',desc:'完成 7/24 宵宮行程',need:['r5']},
+  {id:'taiko', emoji:'🥁',name:'催太鼓目擊者',desc:'目擊催太鼓宮入',need:['r4']},
+  {id:'yatai', emoji:'🍢',name:'屋台獵人',desc:'打卡任一屋台帶',anyPrefix:'yt-',need:['r2']},
+  {id:'yukata',emoji:'👘',name:'浴衣勇者',desc:'完成難波浴衣著裝',need:['r6']},
+  {id:'hanabi',emoji:'🎆',name:'花火滿貫',desc:'打卡花火觀賞點',anyPrefix:'hb-',need:['r9']},
+];
+
+/* ---------- 出門提醒 ---------- */
+const REMIND_LIST = [
+  {id:'cash',t:'現金（多數屋台只收現金）'},
+  {id:'fan',t:'扇子／涼感'},
+  {id:'powerbank',t:'行動電源'},
+  {id:'sandal',t:'備用涼鞋（木屐走久會痛）'},
+  {id:'mat',t:'野餐墊（卡位用）'},
+  {id:'valuables',t:'貴重物留住處'},
+];
+
+/* ============================================================
+   狀態儲存 (localStorage)
+   ============================================================ */
+const LS_KEY='tenjin2026';
+let store = loadStore();
+function loadStore(){
+  try{ const s=JSON.parse(localStorage.getItem(LS_KEY)); return s||{checkins:{},reminds:{},achv:{}}; }
+  catch(e){ return {checkins:{},reminds:{},achv:{}}; }
+}
+function saveStore(){ try{ localStorage.setItem(LS_KEY,JSON.stringify(store)); }catch(e){} }
+function isChecked(id){ return !!store.checkins[id]; }
+function setCheck(id,v){ if(v) store.checkins[id]=Date.now(); else delete store.checkins[id]; saveStore(); }
+function anyCheckedPrefix(pre){ return Object.keys(store.checkins).some(k=>k.indexOf(pre)===0); }
+
+/* ============================================================
+   地圖初始化
+   ============================================================ */
+let map, tileLayer, fallbackMode=false, gpsMarker=null, gpsLatLng=null, gpsWatch=null;
+const mLayers={};
+
+function initMap(){
+  try{
+    map = L.map('map',{zoomControl:true,attributionControl:true,tap:true}).setView([34.6975,135.5150],14);
+    tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      maxZoom:19, minZoom:11, attribution:'© OpenStreetMap', crossOrigin:true
     });
-  </script>
+    let tileErrors=0, tileOk=false;
+    tileLayer.on('tileerror',()=>{ tileErrors++; if(!tileOk && tileErrors>=4) enterFallback(); });
+    tileLayer.on('tileload',()=>{ tileOk=true; });
+    tileLayer.addTo(map);
+    setTimeout(()=>{ if(!tileOk) enterFallback(); },6000);
 
+    Object.keys(LAYERS).forEach(k=> mLayers[k]=L.layerGroup().addTo(map));
+    buildStaticMarkers();
+    rebuildCrowd();
+    rebuildRoute();
+    applyLayerVisibility();
+  }catch(e){ enterFallback(); }
+}
+
+function enterFallback(){
+  if(fallbackMode) return;
+  fallbackMode=true;
+  document.getElementById('fallback').classList.remove('hidden');
+  renderFallback();
+}
+function exitFallback(){
+  fallbackMode=false;
+  document.getElementById('fallback').classList.add('hidden');
+  if(map){ setTimeout(()=>map.invalidateSize(),120); }
+}
+
+/* ---------- markers ---------- */
+function divPin(color,emoji){
+  return L.divIcon({className:'',html:`<div class="pin" style="background:${color};width:24px;height:24px"><span>${emoji}</span></div>`,
+    iconSize:[24,24],iconAnchor:[12,24],popupAnchor:[0,-24]});
+}
+function buildStaticMarkers(){
+  MATSURI.forEach(p=>{
+    const mk=L.marker([p.lat,p.lng],{icon:divPin(LAYERS.matsuri.color,p.emoji)});
+    mk.on('click',()=>openMatsuri(p)); mLayers.matsuri.addLayer(mk);
+  });
+  YATAI.forEach(p=>{
+    const poly=L.polygon(p.poly,{color:p.color,fillColor:p.color,fillOpacity:.28,weight:2});
+    poly.on('click',()=>openYatai(p)); mLayers.yatai.addLayer(poly);
+    const c=poly.getBounds().getCenter();
+    const lbl=L.marker(c,{icon:L.divIcon({className:'',html:`<div style="background:${p.color};color:#111;font-size:10px;font-weight:800;padding:2px 6px;border-radius:10px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.5)">🍢 ${p.level}</div>`,iconSize:[10,10]})});
+    lbl.on('click',()=>openYatai(p)); mLayers.yatai.addLayer(lbl);
+  });
+  HANABI.forEach(p=>{
+    const t=HTIER[p.tier];
+    const mk=L.marker([p.lat,p.lng],{icon:divPin(t.color,t.emoji)});
+    mk.on('click',()=>openHanabi(p)); mLayers.hanabi.addLayer(mk);
+  });
+  STATION.forEach(p=>{
+    const s=SSTAT[p.status];
+    const mk=L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',html:`<div class="pin" style="background:${s.c};width:24px;height:24px"><span>🚉</span></div>`,iconSize:[24,24],iconAnchor:[12,24],popupAnchor:[0,-24]})});
+    mk.on('click',()=>openStation(p)); mLayers.station.addLayer(mk);
+  });
+}
+function rebuildCrowd(){
+  if(!mLayers.crowd) return;
+  mLayers.crowd.clearLayers();
+  const f=festClock(now());
+  CROWD.forEach(z=>{
+    const lv=crowdLevelAt(z,f), col=LV[lv].c;
+    const circle=L.circle([z.lat,z.lng],{radius:z.r,color:col,fillColor:col,
+      fillOpacity: lv==='green'?.05:(z.faint?.10:.22), weight: lv==='green'?1:2, dashArray:z.faint?'6 6':null});
+    circle.on('click',()=>openCrowd(z));
+    mLayers.crowd.addLayer(circle);
+  });
+}
+function rebuildRoute(){
+  if(!mLayers.route) return;
+  mLayers.route.clearLayers();
+  const activeIdx=currentRouteIndex();
+  ROUTE.forEach((r,i)=>{
+    const done=isChecked(r.id);
+    let cls='route-dot'; if(i===activeIdx) cls+=' active'; else if(done) cls+=' done';
+    const mk=L.marker([r.lat,r.lng],{icon:L.divIcon({className:'',html:`<div class="${cls}">${done?'✓':(i+1)}</div>`,iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-16]}),zIndexOffset:1000});
+    mk.on('click',()=>openRoutePoint(r,i)); mLayers.route.addLayer(mk);
+  });
+  [24,25].forEach(day=>{
+    const seg=ROUTE.filter(r=>r.d===day).map(r=>[r.lat,r.lng]);
+    if(seg.length>1) mLayers.route.addLayer(L.polyline(seg,{color:LAYERS.route.color,weight:3,opacity:.7,dashArray:'6 7'}));
+  });
+}
+function applyLayerVisibility(){
+  if(!map) return;
+  Object.keys(LAYERS).forEach(k=>{
+    if(LAYERS[k].on){ if(!map.hasLayer(mLayers[k])) map.addLayer(mLayers[k]); }
+    else{ if(map.hasLayer(mLayers[k])) map.removeLayer(mLayers[k]); }
+  });
+}
+
+/* ============================================================
+   圖層開關 UI
+   ============================================================ */
+function buildLayerChips(){
+  const wrap=document.getElementById('layerScroll'); wrap.innerHTML='';
+  Object.keys(LAYERS).forEach(k=>{
+    const L_=LAYERS[k];
+    const chip=document.createElement('button');
+    chip.className='layer-chip'+(L_.on?'':' off');
+    chip.innerHTML=`<span class="dot" style="background:${L_.color}"></span>${L_.emoji} ${L_.name}`;
+    chip.onclick=()=>{ L_.on=!L_.on; chip.classList.toggle('off',!L_.on); applyLayerVisibility(); if(fallbackMode) renderFallback(); };
+    wrap.appendChild(chip);
+  });
+}
+
+/* ============================================================
+   Bottom Sheet
+   ============================================================ */
+const sheet=document.getElementById('sheet'), mask=document.getElementById('sheetMask');
+function openSheet(title,html){
+  document.getElementById('sheetTitle').innerHTML=title;
+  document.getElementById('sheetBody').innerHTML=html;
+  sheet.classList.add('show'); mask.classList.add('show');
+}
+function closeSheet(){ sheet.classList.remove('show'); mask.classList.remove('show'); }
+document.getElementById('sheetClose').onclick=closeSheet;
+mask.onclick=closeSheet;
+
+/* ---------- popup 內容 ---------- */
+function schedHtml(list){
+  const f=festClock(now());
+  return list.map(s=>{
+    const isToday = s.d===f.day && f.mo===7;
+    return `<li><b>7/${s.d} ${s.t}</b> ${s.x} ${isToday?'<span class="pill" style="background:var(--accent);color:#fff">今日</span>':''}</li>`;
+  }).join('');
+}
+function openMatsuri(p){
+  openSheet(`⛩️ ${p.name}`,
+   `<div class="info-block"><h4>時刻表</h4><ul>${schedHtml(p.sched)}</ul></div>
+    <div class="info-block"><p>${p.note}</p></div>
+    ${checkinBtnHtml('mk-'+p.id)}`);
+  bindCheckin('mk-'+p.id);
+}
+function openYatai(p){
+  openSheet(`🍢 ${p.name}`,
+   `<div class="info-block"><span class="badge" style="background:${p.color};color:#111">${p.level}</span><p style="margin-top:8px">${p.info}</p></div>
+    ${checkinBtnHtml('yt-'+p.id)}`);
+  bindCheckin('yt-'+p.id);
+}
+function openHanabi(p){
+  const t=HTIER[p.tier];
+  openSheet(`${t.emoji} ${p.name}`,
+   `<div class="info-block"><span class="badge" style="background:${t.color};color:#fff">${t.name}</span>
+      <ul style="margin-top:8px">
+        <li><b>視野</b>：${p.view}</li><li><b>需到達</b>：${p.arrive}</li><li><b>擁擠度</b>：${p.crowd}</li>
+      </ul></div>
+    ${checkinBtnHtml('hb-'+p.id)}`);
+  bindCheckin('hb-'+p.id);
+}
+function openStation(p){
+  const s=SSTAT[p.status];
+  openSheet(`🚉 ${p.name}`,
+   `<div class="info-block"><span class="badge" style="background:${s.c};color:#fff">${s.t}</span>
+     <ul style="margin-top:8px"><li><b>當日狀態</b>：${p.day}</li><li>${p.note}</li></ul></div>`);
+}
+function openCrowd(z){
+  const f=festClock(now());
+  const lv=crowdLevelAt(z,f), info=LV[lv], note=activeWindowNote(z,f);
+  const windows=z.win.map(w=>`<li><b>7/${w.d} ${w.from}–${w.to}</b> <span class="pill" style="background:${LV[w.lv].c};color:#fff">${LV[w.lv].t}</span> ${w.note||''}</li>`).join('');
+  openSheet(`🔥 ${z.name}`,
+   `<div class="info-block"><h4>目前等級 <span class="badge" style="background:${info.c};color:#fff">${info.t}｜${info.w}</span></h4>
+     ${note?`<p style="margin-top:6px;color:var(--accent2)">⚠️ ${note}</p>`:'<p style="margin-top:6px">此時段相對緩和。</p>'}</div>
+    <div class="info-block"><h4>時段規則（規則式預測，非即時）</h4><ul>${windows}</ul></div>`);
+}
+function openRoutePoint(r,i){
+  openSheet(`🧭 ${r.t} · 第 ${i+1} 站`,
+   `<div class="info-block"><span class="badge" style="background:var(--route);color:#04222b">7/${r.d}</span>
+     <p style="margin-top:8px;color:var(--text);font-weight:700">${r.title}</p>
+     <p style="margin-top:4px">${r.desc}</p></div>
+    ${checkinBtnHtml(r.id)}`);
+  bindCheckin(r.id);
+}
+function checkinBtnHtml(id){
+  const done=isChecked(id);
+  return `<button class="chkbtn ${done?'done':''}" id="ci_${id}" style="width:100%;padding:12px;font-size:.9rem;margin-top:4px">${done?'✓ 已打卡':'📍 打卡'}</button>`;
+}
+function bindCheckin(id){
+  const btn=document.getElementById('ci_'+id); if(!btn) return;
+  btn.onclick=()=>{
+    const nv=!isChecked(id); setCheck(id,nv);
+    btn.classList.toggle('done',nv); btn.textContent=nv?'✓ 已打卡':'📍 打卡';
+    if(nv){ toast('✓','已打卡！'); checkAchievements(); }
+    rebuildRoute(); if(fallbackMode) renderFallback();
+  };
+}
+
+/* ============================================================
+   目前任務 / 倒數
+   ============================================================ */
+function currentRouteIndex(){
+  const f=festClock(now());
+  if(!isFestDayF(f)) return -1;
+  const today=ROUTE.filter(r=>r.d===f.day);
+  let idx=-1;
+  for(let i=0;i<today.length;i++){ if(f.hm>=toMin(today[i].t)) idx=i; }
+  if(idx<0) return -1;
+  return ROUTE.indexOf(today[idx]);
+}
+function nextRoutePoint(){
+  const f=festClock(now());
+  if(!isFestDayF(f)) return null;
+  for(const r of ROUTE.filter(r=>r.d===f.day)){ if(toMin(r.t)>f.hm) return r; }
+  return null;
+}
+function updateTaskBar(){
+  const d=now(), f=festClock(d);
+  const dayName = (f.mo===7&&f.day===24)?'7/24 宵宮':(f.mo===7&&f.day===25)?'7/25 本宮':'';
+  document.getElementById('clock').innerHTML=`${pad(d.getHours())}:${pad(d.getMinutes())}<span class="day">${dayName}${simOffset?' · 模擬':''}</span>`;
+  document.getElementById('btnSim').textContent = simOffset?'🟣':'🕒';
+  const taskEl=document.querySelector('#taskLine .txt');
+  const cdEl=document.getElementById('countdown');
+  const idx=currentRouteIndex();
+  if(idx<0){
+    taskEl.textContent = isFestDay(d)?'祭典行程尚未開始':'非祭典日 — 點 🕒 可模擬時間預覽';
+    const nx=nextRoutePoint();
+    if(nx){ cdEl.innerHTML=`下一步：${nx.t} ${nx.title} · <b>${toMin(nx.t)-f.hm} 分後</b>`; } else cdEl.textContent='';
+  }else{
+    const cur=ROUTE[idx];
+    taskEl.textContent=`${cur.t} ${cur.title}`;
+    const nx=nextRoutePoint();
+    if(nx){ cdEl.innerHTML=`下一步：<b>${nx.t}</b> ${nx.title.split('→')[0].trim()} · <b>${toMin(nx.t)-f.hm} 分後</b>`; }
+    else cdEl.innerHTML='今日行程接近尾聲 🎆';
+  }
+  if(gpsLatLng) updateNextDistance();
+}
+
+/* ============================================================
+   「現在去哪」推薦
+   ============================================================ */
+function recommend(){
+  const f=festClock(now());
+  const R=(title,why,lat,lng)=>({title,why,goto:{lat,lng}});
+  if(!isFestDayF(f)){
+    return R('天神橋筋商店街 屋台','非祭典日：這是示意推薦。祭典期間本引擎會依當下時刻給出最佳點；點上方 🕒 可模擬 7/24、7/25 時間試玩。',34.6975,135.5108);
+  }
+  const hm=f.hm;
+  if(f.day===24){
+    if(hm<15*60) return R('天神橋筋商店街 屋台','宵宮屋台 15:00 才開，先在商店街南段閒逛卡位。',34.6975,135.5108);
+    if(hm<17*60) return R('天神橋筋商店街 屋台晚餐','屋台剛開、尖峰(17:00)前最好逛，先吃飽。',34.6935,135.5112);
+    if(hm<18*60+20) return R('前進天滿宮境內卡位','18:40 催太鼓宮入前卡位，境內即將爆滿，動作要快。',34.6956,135.5127);
+    if(hm<19*60+45) return R('天滿宮境內 · 催太鼓/獅子舞','正是催太鼓(18:40)、獅子舞(19:00)宮入時段，就在境內別移動。',34.6956,135.5127);
+    return R('往南撤離 · 心齋橋','宵宮已散場，沿商店街往南避開南森町人潮，收工。',34.6720,135.5010);
+  }
+  if(hm<14*60) return R('天神橋筋商店街 屋台','本宮屋台 12:00 就開，尖峰(17:00)前最好逛 — 現在最舒服！',34.6975,135.5108);
+  if(hm<15*60+30) return R('商店街屋台 / 準備北上','14:00 本宮祭、15:30 陸渡御。若要卡花火位，該吃飽準備往桜ノ宮了。',34.6975,135.5108);
+  if(hm<17*60+30) return R('源八橋西岸 卡位','花火近景要靠佔位。17:30 前抵達源八橋西岸鋪野餐墊。',34.7025,135.5182);
+  if(hm<19*60+30) return R('源八橋西岸 · 顧位＋買晚餐','卡位時段：一人顧位、一人去東岸屋台買晚餐，等 19:30 開場。',34.7025,135.5182);
+  if(hm<20*60+50) return R('原地看花火 🎆','花火進行中(19:30–20:50)，頭頂近景，別移動。',34.7025,135.5182);
+  if(hm<21*60+10) return R('原地等待 15 分鐘','散場第一波最擠，原地等到 21:10 再走最快。切勿衝桜ノ宮駅。',34.7025,135.5182);
+  return R('沿東岸南行 → 京橋','往京橋走 15–20 分再搭車，絕不進桜ノ宮駅。京橋疏散力最強。',34.6970,135.5340);
+}
+function openRecommend(){
+  const r=recommend();
+  openSheet('現在去哪？',
+   `<div class="rec-card">
+     <div style="font-size:.72rem;color:var(--muted);letter-spacing:1px">此刻最推薦</div>
+     <div class="title">${r.title}</div>
+     <div class="why">${r.why}</div>
+     <button class="go" id="recGo">🧭 在地圖上定位此點</button>
+   </div>
+   <div class="mini-h">同時參考</div>
+   ${liveSnapshotHtml()}`);
+  const g=document.getElementById('recGo');
+  if(g) g.onclick=()=>{ closeSheet(); if(fallbackMode) exitFallback();
+    if(map){ map.flyTo([r.goto.lat,r.goto.lng],16); L.popup().setLatLng([r.goto.lat,r.goto.lng]).setContent('👈 '+r.title).openOn(map);} };
+}
+
+function liveSnapshotHtml(){
+  const f=festClock(now());
+  const hot=CROWD.map(z=>({z,lv:crowdLevelAt(z,f)})).filter(x=>x.lv!=='green').sort((a,b)=>(a.lv==='red'?0:1)-(b.lv==='red'?0:1));
+  const hotHtml = hot.length? hot.map(x=>`<li><span class="pill" style="background:${LV[x.lv].c};color:#fff">${LV[x.lv].t}</span> <b>${x.z.name}</b> ${activeWindowNote(x.z,f)?'· '+activeWindowNote(x.z,f):''}</li>`).join('') : '<li>目前無明顯壅塞熱區</li>';
+  let hb='本日無花火（7/24 無花火）。';
+  if(f.day===25){
+    if(f.hm<17*60+30) hb='免費近景（源八橋/銀橋）需即刻卡位；穴場(都島大橋/OAP)18:30 前到即可。';
+    else if(f.hm<20*60+50) hb='進行中：付費會場憑票入場；免費區已滿，穴場把握最後名額。';
+    else hb='花火已近尾聲/結束 — 重點轉為散場動線。';
+  }
+  return `
+   <div class="info-block"><h4>🔥 現在最熱鬧 / 該避開</h4><ul>${hotHtml}</ul></div>
+   <div class="info-block"><h4>🍢 屋台在哪</h4><ul>
+     <li><b>天神橋筋商店街</b>：密度最高（僅天三以南）</li>
+     <li><b>大川東岸</b>：可邊吃邊看花火</li>
+     <li><b>南天滿公園</b>：規模較小、較緩和</li></ul></div>
+   <div class="info-block"><h4>🎆 該去哪看花火</h4><p style="color:var(--text)">${hb}</p></div>
+   <div class="info-block"><h4>🚉 回程避開哪些站</h4><ul>
+     <li><span class="pill" style="background:${SSTAT.avoid.c};color:#fff">避</span> 南森町、桜ノ宮</li>
+     <li><span class="pill" style="background:${SSTAT.best.c};color:#fff">推</span> 京橋（疏散力最強）、北浜／淀屋橋</li></ul></div>`;
+}
+
+/* ============================================================
+   Fallback 文字模式
+   ============================================================ */
+function renderFallback(){
+  const f=festClock(now());
+  document.getElementById('fbTime').textContent=`7/${f.day||'?'} ${pad(f.h)}:${pad(f.m)}`;
+  const r=recommend();
+  document.getElementById('fbContent').innerHTML=`
+    <div class="fb-card" style="border-color:var(--accent)">
+      <h3>🧭 此刻最推薦 <span class="badge" style="background:var(--accent);color:#fff">GO</span></h3>
+      <div style="font-size:1.05rem;font-weight:800;color:var(--accent2)">${r.title}</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:5px">${r.why}</div>
+    </div>
+    ${liveSnapshotHtml().replace(/info-block/g,'fb-card')}
+    <div class="fb-card"><h3>🧭 我的下一步</h3><ul id="fbRoute"></ul></div>`;
+  const cur=currentRouteIndex(), nx=nextRoutePoint();
+  const ul=document.getElementById('fbRoute');
+  if(ul){
+    let h='';
+    if(cur>=0) h+=`<li><b>現在</b>：${ROUTE[cur].t} ${ROUTE[cur].title}</li>`;
+    if(nx) h+=`<li><b>下一步</b>：${nx.t} ${nx.title} <span style="color:var(--accent2)">(${toMin(nx.t)-f.hm} 分後)</span></li>`;
+    if(!h) h='<li>非行程時段。點上方 🕒 可模擬祭典時間。</li>';
+    ul.innerHTML=h;
+  }
+}
+
+/* ============================================================
+   GPS
+   ============================================================ */
+function toggleGps(){
+  const btn=document.getElementById('fabGps');
+  if(gpsWatch){ navigator.geolocation.clearWatch(gpsWatch); gpsWatch=null; btn.classList.remove('active'); if(gpsMarker&&map){map.removeLayer(gpsMarker);} gpsMarker=null; gpsLatLng=null; toast('📍','已關閉定位'); updateTaskBar(); return; }
+  if(!navigator.geolocation){ toast('⚠️','此裝置不支援定位，可手動打卡'); return; }
+  btn.classList.add('active');
+  gpsWatch=navigator.geolocation.watchPosition(pos=>{
+    gpsLatLng={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    if(map){
+      if(!gpsMarker){ gpsMarker=L.marker([gpsLatLng.lat,gpsLatLng.lng],{icon:L.divIcon({className:'',html:'<div class="gps-dot"></div>',iconSize:[18,18],iconAnchor:[9,9]}),zIndexOffset:2000}).addTo(map); map.setView([gpsLatLng.lat,gpsLatLng.lng],16); }
+      else gpsMarker.setLatLng([gpsLatLng.lat,gpsLatLng.lng]);
+    }
+    autoCheckinNearby(); updateNextDistance();
+  },err=>{
+    btn.classList.remove('active'); gpsWatch=null;
+    toast('📍','無法取得定位（已拒絕/失敗）— 全功能仍可手動操作');
+  },{enableHighAccuracy:true,maximumAge:5000,timeout:12000});
+}
+function distM(a,b){
+  const R=6371000,toR=x=>x*Math.PI/180;
+  const dLat=toR(b.lat-a.lat),dLng=toR(b.lng-a.lng);
+  const s=Math.sin(dLat/2)**2+Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+function autoCheckinNearby(){
+  if(!gpsLatLng) return;
+  ROUTE.forEach(r=>{
+    if(!isChecked(r.id) && distM(gpsLatLng,{lat:r.lat,lng:r.lng})<=100){
+      setCheck(r.id,true); toast('✓','自動打卡：'+r.title); checkAchievements(); rebuildRoute();
+    }
+  });
+}
+function bearing(a,b){
+  const toR=x=>x*Math.PI/180,toD=x=>x*180/Math.PI;
+  const y=Math.sin(toR(b.lng-a.lng))*Math.cos(toR(b.lat));
+  const x=Math.cos(toR(a.lat))*Math.sin(toR(b.lat))-Math.sin(toR(a.lat))*Math.cos(toR(b.lat))*Math.cos(toR(b.lng-a.lng));
+  return (toD(Math.atan2(y,x))+360)%360;
+}
+function compass(deg){const d=['北','東北','東','東南','南','西南','西','西北'];return d[Math.round(deg/45)%8];}
+function updateNextDistance(){
+  const nx=nextRoutePoint(); const cdEl=document.getElementById('countdown');
+  if(gpsLatLng && nx){
+    const dm=Math.round(distM(gpsLatLng,{lat:nx.lat,lng:nx.lng}));
+    const dir=compass(bearing(gpsLatLng,{lat:nx.lat,lng:nx.lng}));
+    const f=festClock(now());
+    cdEl.innerHTML=`下一步：<b>${nx.t}</b> ${nx.title.split('→')[0].trim()} · 距 <b>${dm>=1000?(dm/1000).toFixed(1)+'km':dm+'m'}</b> ${dir}方 · <b>${toMin(nx.t)-f.hm} 分後</b>`;
+  }
+}
+
+/* ============================================================
+   成就 / 提醒
+   ============================================================ */
+function achvGot(a){
+  const needOk = a.need.every(id=>isChecked(id));
+  if(needOk) return true;
+  if(a.anyPrefix && anyCheckedPrefix(a.anyPrefix)) return true;
+  return false;
+}
+function openAchv(){
+  openSheet('🏅 成就集章',
+   `<div class="achv-grid">${ACHV.map(a=>{
+     const got=achvGot(a);
+     return `<div class="achv ${got?'got':''}"><div class="emoji">${a.emoji}</div><div class="an">${a.name}</div><div class="ad">${a.desc}</div><div class="prog">${got?'✓ 已達成':'未達成'}</div></div>`;
+   }).join('')}</div>
+   <div class="mini-h">說明</div>
+   <div class="info-block"><p>行程點與情報點皆可打卡（GPS 100 公尺內自動、或手動）。進度以 localStorage 保存於本機。</p></div>
+   <button class="chkbtn" id="resetAll" style="width:100%;padding:11px;margin-top:12px;color:var(--red);border-color:var(--red)">清除所有打卡紀錄</button>`);
+  document.getElementById('resetAll').onclick=()=>{ if(confirm('確定清除所有打卡與成就紀錄？')){ store.checkins={}; store.achv={}; saveStore(); rebuildRoute(); openAchv(); toast('🗑️','已清除'); } };
+}
+function checkAchievements(){
+  if(!store.achv) store.achv={};
+  ACHV.forEach(a=>{
+    if(achvGot(a) && !store.achv[a.id]){ store.achv[a.id]=1; saveStore(); toast(a.emoji,'成就達成：'+a.name); }
+  });
+}
+function openRemind(){
+  openSheet('🎒 常駐提醒',
+   `<div class="info-block" style="border-color:var(--accent2)"><h4>🎒 7/25 出門清單</h4>
+      <div id="remindList">${REMIND_LIST.map(r=>`<div class="remind-item ${store.reminds[r.id]?'on':''}" data-id="${r.id}"><div class="ck">${store.reminds[r.id]?'✓':''}</div><div class="lbl">${r.t}</div></div>`).join('')}</div></div>
+    <div class="info-block" style="border-color:var(--red)"><h4>🎆 花火結束提醒</h4>
+      <p style="color:var(--text)">原地等 <b>15 分鐘</b>，往<b>京橋</b>走，<b style="color:var(--red)">勿衝桜ノ宮駅</b>。散場第一波（20:50–21:10）原地等待最快；21:00 後計程車叫不到。</p></div>`);
+  document.querySelectorAll('#remindList .remind-item').forEach(el=>{
+    el.onclick=()=>{ const id=el.dataset.id; store.reminds[id]=!store.reminds[id]; saveStore(); el.classList.toggle('on',store.reminds[id]); el.querySelector('.ck').textContent=store.reminds[id]?'✓':''; };
+  });
+}
+
+/* 花火結束 alert banner */
+let bannerShown=false, bannerDismissed=false;
+function checkAlertBanner(){
+  const f=festClock(now());
+  const b=document.getElementById('alertBanner');
+  const inWindow = f.mo===7&&f.day===25&&f.hm>=20*60+50&&f.hm<=21*60+30;
+  if(inWindow && !bannerDismissed){
+    if(!bannerShown){
+      b.innerHTML=`<span style="font-size:1.3rem">🎆</span><div>花火結束！<b>原地等 15 分鐘</b>再走 → 往<b>京橋</b>，<b>勿衝桜ノ宮駅</b>。</div><span class="x" id="bx">✕</span>`;
+      b.classList.remove('hidden'); bannerShown=true;
+      document.getElementById('bx').onclick=()=>{ b.classList.add('hidden'); bannerDismissed=true; };
+    }
+  }else{ b.classList.add('hidden'); if(!inWindow) bannerShown=false; }
+}
+
+/* ============================================================
+   時間模擬器
+   ============================================================ */
+const SIM_PRESETS=[
+  {l:'即時',v:null},
+  {l:'7/24 17:00 屋台',v:[24,17,0]},
+  {l:'7/24 18:40 催太鼓',v:[24,18,40]},
+  {l:'7/24 19:30 散場',v:[24,19,30]},
+  {l:'7/25 14:00 尖峰前',v:[25,14,0]},
+  {l:'7/25 17:30 卡位',v:[25,17,30]},
+  {l:'7/25 19:30 花火',v:[25,19,30]},
+  {l:'7/25 20:55 散場',v:[25,20,55]},
+];
+function simVal(){ if(!simOffset) return null; const f=festClock(new Date(simOffset)); return [f.day,f.h,f.m]; }
+function openSim(){
+  const f = simOffset?festClock(new Date(simOffset)):null;
+  openSheet('🕒 時間模擬',
+   `<div id="simPanel">
+    <div class="info-block"><p>祭典在 7/24–7/25。今天可能還沒到，用模擬時間預覽「依時刻變化」的功能：熱區變色、目前任務、現在去哪推薦、花火結束提醒。</p></div>
+    <div class="mini-h">快速跳到</div>
+    <div class="simrow">${SIM_PRESETS.map((p,i)=>`<button class="simbtn ${JSON.stringify(p.v)===JSON.stringify(simVal())?'on':''}" data-i="${i}">${p.l}</button>`).join('')}</div>
+    <div class="mini-h">微調（模擬中才可用）</div>
+    <div class="simrow">
+      <button class="simbtn ${f&&f.day===24?'on':''}" id="simDay24">7/24 宵宮</button>
+      <button class="simbtn ${f&&f.day===25?'on':''}" id="simDay25">7/25 本宮</button>
+    </div>
+    <div style="font-size:.9rem;text-align:center;font-weight:800;margin-top:4px" id="simTimeLbl">${f?pad(f.h)+':'+pad(f.m):'即時模式'}</div>
+    <input type="range" id="simSlider" min="0" max="1439" step="5" value="${f?f.hm:1050}" ${simOffset?'':'disabled'}>
+    <button class="chkbtn" id="simLive" style="width:100%;padding:11px;margin-top:6px;${simOffset?'':'background:var(--green);border-color:var(--green);color:#fff'}">${simOffset?'↩ 回到即時模式':'目前為即時模式'}</button>
+   </div>`);
+  document.querySelectorAll('.simbtn[data-i]').forEach(b=>b.onclick=()=>{ const p=SIM_PRESETS[+b.dataset.i]; if(p.v===null) setSimLive(); else setSim(p.v[0],p.v[1],p.v[2]); openSim(); });
+  document.getElementById('simDay24').onclick=()=>{ const c=simOffset?festClock(new Date(simOffset)):{h:17,m:0}; setSim(24,c.h,c.m); openSim(); };
+  document.getElementById('simDay25').onclick=()=>{ const c=simOffset?festClock(new Date(simOffset)):{h:17,m:0}; setSim(25,c.h,c.m); openSim(); };
+  const sl=document.getElementById('simSlider');
+  sl.oninput=()=>{ const c=simOffset?festClock(new Date(simOffset)):{day:25}; const v=+sl.value; setSim(c.day||25,Math.floor(v/60),v%60); document.getElementById('simTimeLbl').textContent=hm2str(v); };
+  document.getElementById('simLive').onclick=()=>{ setSimLive(); openSim(); };
+}
+function setSim(day,h,m){ simOffset=new Date(FEST_YEAR,6,day,h,m,0).getTime(); onTimeChanged(); }
+function setSimLive(){ simOffset=null; bannerDismissed=false; onTimeChanged(); }
+function onTimeChanged(){
+  updateTaskBar(); rebuildCrowd(); rebuildRoute(); checkAlertBanner();
+  if(fallbackMode) renderFallback();
+}
+
+/* ============================================================
+   Toast
+   ============================================================ */
+let toastT=null;
+function toast(em,msg){
+  const t=document.getElementById('toast');
+  t.innerHTML=`<span class="em">${em}</span>${msg}`;
+  t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+/* ============================================================
+   我的路線 sheet
+   ============================================================ */
+function openRouteSheet(){
+  openSheet('🧭 我的路線',
+   `<div class="mini-h">7/24（五）宵宮</div>
+    ${ROUTE.filter(r=>r.d===24).map(routeItemHtml).join('')}
+    <div class="mini-h">7/25（六）本宮</div>
+    ${ROUTE.filter(r=>r.d===25).map(routeItemHtml).join('')}`);
+  bindRouteItems();
+}
+function routeItemHtml(r){
+  const done=isChecked(r.id); const idx=currentRouteIndex(); const isNow=ROUTE[idx]&&ROUTE[idx].id===r.id;
+  return `<div class="route-item ${isNow?'now':''} ${done?'done':''}" data-id="${r.id}">
+    <div class="rtime">${r.t}</div>
+    <div class="rmain"><div class="rt">${r.title}</div><div class="rd">${r.desc}</div></div>
+    <div class="rchk"><button class="chkbtn ${done?'done':''}" data-chk="${r.id}">${done?'✓':'打卡'}</button></div>
+  </div>`;
+}
+function bindRouteItems(){
+  document.querySelectorAll('[data-chk]').forEach(b=>b.onclick=(e)=>{
+    e.stopPropagation(); const id=b.dataset.chk; const nv=!isChecked(id); setCheck(id,nv);
+    b.classList.toggle('done',nv); b.textContent=nv?'✓':'打卡';
+    if(nv){toast('✓','已打卡');checkAchievements();} rebuildRoute(); if(fallbackMode)renderFallback();
+  });
+  document.querySelectorAll('.route-item').forEach(el=>el.onclick=()=>{
+    const r=ROUTE.find(x=>x.id===el.dataset.id); const i=ROUTE.indexOf(r);
+    if(!fallbackMode&&map){ closeSheet(); map.flyTo([r.lat,r.lng],16); setTimeout(()=>openRoutePoint(r,i),350); }
+    else openRoutePoint(r,i);
+  });
+}
+
+/* ============================================================
+   綁定 & 啟動
+   ============================================================ */
+document.getElementById('fabWhere').onclick=openRecommend;
+document.getElementById('fabGps').onclick=toggleGps;
+document.getElementById('fabRoute').onclick=openRouteSheet;
+document.getElementById('btnSim').onclick=openSim;
+document.getElementById('btnRemind').onclick=openRemind;
+document.getElementById('btnAchv').onclick=openAchv;
+document.getElementById('fbRetry').onclick=()=>{ exitFallback(); if(tileLayer) tileLayer.redraw(); };
+
+buildLayerChips();
+initMap();
+updateTaskBar();
+checkAlertBanner();
+
+setInterval(()=>{ updateTaskBar(); }, 15000);
+setInterval(()=>{ if(!simOffset){ rebuildCrowd(); rebuildRoute(); checkAlertBanner(); if(fallbackMode)renderFallback(); } }, 60000);
+
+setTimeout(()=>{ if(!localStorage.getItem(LS_KEY+'_seen')){ toast('⛩️','歡迎！點下方圖層開關切換情報，右下「現在去哪」看即時建議'); localStorage.setItem(LS_KEY+'_seen','1'); } },1400);
+</script>
 </body>
 </html>
