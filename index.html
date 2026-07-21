@@ -3,28 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#141110">
+<meta name="theme-color" content="#f2f1f6">
 <title>大阪天神祭 · 祭典導航</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 /* ============ Base ============ */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#0b0a0f; --surface:#16151c; --surface2:#1f1e27; --line:rgba(255,255,255,.09);
-  --text:#f3f1f6; --muted:#9d99ab;
-  --accent:#ff5a36; --gold:#ffc24d;
-  --green:#34c759; --yellow:#ffcc33; --red:#ff453a; --blue:#0a84ff;
+  --bg:#f2f1f6; --surface:#ffffff; --surface2:#ffffff; --line:rgba(60,60,67,.12);
+  --text:#1c1c1e; --muted:#6d6d72;
+  --accent:#ff5a36; --gold:#b8720a;
+  --green:#34c759; --yellow:#ffcc33; --red:#ff3b30; --blue:#007aff;
   --route:#3dd7ee;
-  /* ── glass materials ── */
+  /* ── glass materials（iOS 淺色系統材質） ── */
   --glass:saturate(180%) blur(22px);
   --glass-strong:saturate(180%) blur(30px);
-  --pane:rgba(24,23,30,.62);
-  --pane-strong:rgba(18,17,24,.80);
-  --card:rgba(255,255,255,.045);
-  --hair:rgba(255,255,255,.10);
-  --hi:inset 0 1px 0 rgba(255,255,255,.10);
-  --shadow:0 8px 30px rgba(0,0,0,.55);
-  --shadow-lg:0 22px 55px rgba(0,0,0,.62);
+  --pane:rgba(255,255,255,.68);
+  --pane-strong:rgba(252,251,255,.86);
+  --card:rgba(120,120,128,.08);
+  --hair:rgba(60,60,67,.14);
+  --hi:inset 0 1px 0 rgba(255,255,255,.65);
+  --shadow:0 8px 30px rgba(30,26,20,.12);
+  --shadow-lg:0 22px 55px rgba(30,26,20,.18);
   --spring:cubic-bezier(.32,.72,0,1);
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bot:env(safe-area-inset-bottom,0px);
@@ -42,13 +42,13 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 /* ============ Top bar ============ */
 #topbar{
   position:fixed; top:0; left:0; right:0; z-index:1200;
-  background:linear-gradient(180deg,rgba(11,10,15,.78),rgba(11,10,15,.28) 82%,rgba(11,10,15,0));
+  background:linear-gradient(180deg,rgba(245,244,250,.86),rgba(245,244,250,.38) 82%,rgba(245,244,250,0));
   backdrop-filter:var(--glass); -webkit-backdrop-filter:var(--glass);
   padding:calc(var(--safe-top) + 11px) 14px 16px;
 }
 #topbar .row1{display:flex;align-items:center;gap:10px}
 #clock{font-variant-numeric:tabular-nums;font-weight:800;font-size:1.2rem;letter-spacing:.5px;white-space:nowrap}
-#clock .day{font-size:.68rem;color:var(--gold);font-weight:700;margin-left:5px;background:rgba(255,194,77,.13);padding:2px 6px;border-radius:6px}
+#clock .day{font-size:.68rem;color:var(--gold);font-weight:700;margin-left:5px;background:rgba(184,114,10,.12);padding:2px 6px;border-radius:6px}
 #topRight{margin-left:auto;display:flex;gap:7px;align-items:center}
 .tbtn{height:38px;padding:0 12px;border-radius:19px;background:var(--pane);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);border:1px solid var(--hair);box-shadow:var(--hi);display:flex;align-items:center;gap:6px;font-size:.84rem;font-weight:700;color:var(--text);transition:transform .12s var(--spring)}
 .tbtn svg{width:19px;height:19px}
@@ -65,32 +65,32 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 #taskChip .cd{flex-shrink:0;color:var(--gold);font-weight:800;font-variant-numeric:tabular-nums;font-size:.78rem}
 
 /* ============ Map ============ */
-#map{position:absolute;top:0;bottom:0;left:0;right:0;background:#0b0a0f;z-index:1}
-.leaflet-container{background:#0b0a0f;font-family:inherit}
+#map{position:absolute;top:0;bottom:0;left:0;right:0;background:#ece9e2;z-index:1}
+.leaflet-container{background:#ece9e2;font-family:inherit}
 .leaflet-popup-content-wrapper{background:var(--surface2);color:var(--text);border-radius:14px;box-shadow:var(--shadow)}
 .leaflet-popup-tip{background:var(--surface2)}
 .leaflet-popup-content{margin:12px 14px;font-size:.85rem;line-height:1.55}
 .leaflet-popup-content b{color:var(--gold)}
-.leaflet-control-attribution{background:rgba(15,12,11,.7)!important;color:var(--muted)!important;font-size:9px!important}
+.leaflet-control-attribution{background:rgba(255,255,255,.75)!important;color:var(--muted)!important;font-size:9px!important}
 .leaflet-control-attribution a{color:var(--muted)!important}
 .leaflet-control-zoom{display:none}
 
 /* markers */
-.pin{display:flex;align-items:center;justify-content:center;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.5);font-weight:700}
+.pin{display:flex;align-items:center;justify-content:center;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.30);font-weight:700}
 .pin span{transform:rotate(45deg);font-size:13px;line-height:1}
-.route-dot{width:27px;height:27px;border-radius:50%;background:var(--route);border:3px solid #fff;color:#04222b;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.route-dot{width:27px;height:27px;border-radius:50%;background:var(--route);border:3px solid #fff;color:#04222b;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.30)}
 .route-dot.active{background:var(--accent);color:#fff;animation:pulse 1.6s infinite}
 .route-dot.done{background:var(--green);color:#fff}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(240,81,47,.6)}70%{box-shadow:0 0 0 15px rgba(240,81,47,0)}100%{box-shadow:0 0 0 0 rgba(240,81,47,0)}}
-.gps-dot{width:18px;height:18px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 7px rgba(10,132,255,.22),0 2px 6px rgba(0,0,0,.5)}
-.nav-end{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--accent);border:3px solid #fff;box-shadow:0 2px 9px rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center}
+.gps-dot{width:18px;height:18px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 7px rgba(0,122,255,.20),0 2px 6px rgba(0,0,0,.32)}
+.nav-end{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--accent);border:3px solid #fff;box-shadow:0 2px 9px rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center}
 .nav-end span{transform:rotate(45deg);font-size:15px}
-.zlabel{background:rgba(30,26,24,.9);color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:11px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15)}
+.zlabel{background:rgba(255,255,255,.92);color:#1c1c1e;font-size:10px;font-weight:800;padding:2px 7px;border-radius:11px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.22);border:1px solid rgba(0,0,0,.08)}
 
 /* ============ Nav banner (during navigation) ============ */
 #navBanner{
   position:fixed; left:10px; right:10px; top:calc(var(--safe-top) + 9px); z-index:1250;
-  background:linear-gradient(135deg,rgba(10,132,255,.90),rgba(7,104,209,.90)); color:#fff;
+  background:linear-gradient(135deg,rgba(0,122,255,.92),rgba(0,90,210,.92)); color:#fff;
   backdrop-filter:var(--glass); -webkit-backdrop-filter:var(--glass);
   border:1px solid rgba(255,255,255,.20);
   border-radius:20px; padding:12px 14px; box-shadow:var(--shadow-lg),var(--hi);
@@ -118,7 +118,7 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 .tab .ic svg{width:25px;height:25px}
 .tab.on{color:var(--gold)}
 .tab.on .ic{opacity:1;transform:translateY(-1px) scale(1.06)}
-.tab.on::before{content:"";position:absolute;top:0;width:24px;height:3px;border-radius:0 0 3px 3px;background:var(--gold);box-shadow:0 0 10px rgba(255,194,77,.6)}
+.tab.on::before{content:"";position:absolute;top:0;width:24px;height:3px;border-radius:0 0 3px 3px;background:var(--gold);box-shadow:0 0 10px rgba(184,114,10,.35)}
 .tab:active .ic{transform:scale(.86)}
 
 /* ============ Floating CTA + GPS ============ */
@@ -148,11 +148,11 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 #alertBanner .x{margin-left:auto;font-size:1.2rem;opacity:.9}
 
 /* ============ Bottom sheet ============ */
-#sheetMask{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.25s}
+#sheetMask{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:.25s}
 #sheetMask.show{opacity:1;pointer-events:auto}
 #sheet{position:fixed;left:0;right:0;bottom:0;z-index:1310;background:var(--pane-strong);backdrop-filter:var(--glass-strong);-webkit-backdrop-filter:var(--glass-strong);border-radius:26px 26px 0 0;border:1px solid var(--hair);border-bottom:none;max-height:90vh;transform:translateY(105%);transition:transform .44s var(--spring);display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
 #sheet.show{transform:translateY(0)}
-#sheet .grip{width:38px;height:5px;border-radius:5px;background:rgba(255,255,255,.22);margin:10px auto 2px}
+#sheet .grip{width:38px;height:5px;border-radius:5px;background:rgba(0,0,0,.18);margin:10px auto 2px}
 #sheet .sheet-head{display:flex;align-items:center;justify-content:space-between;padding:6px 18px 13px;border-bottom:1px solid var(--hair)}
 #sheet .sheet-head h2{font-size:1.15rem;font-weight:800;letter-spacing:-.01em}
 #sheet .sheet-body{overflow-y:auto;padding:16px 16px calc(var(--safe-bot) + 24px);-webkit-overflow-scrolling:touch}
@@ -169,9 +169,9 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 .badge{font-size:.62rem;padding:3px 9px;border-radius:20px;font-weight:800;color:#fff}
 .pill{display:inline-block;font-size:.64rem;padding:2px 8px;border-radius:20px;font-weight:800;margin:2px 3px 0 0;color:#fff}
 
-.hero{background:linear-gradient(135deg,rgba(255,90,54,.16),rgba(255,255,255,.03));border:1px solid rgba(255,90,54,.45);border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 12px 34px rgba(255,90,54,.13),var(--hi)}
+.hero{background:linear-gradient(135deg,rgba(255,90,54,.10),rgba(255,255,255,.40));border:1px solid rgba(255,90,54,.35);border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 12px 34px rgba(255,90,54,.10),var(--hi)}
 .hero .kick{font-size:.66rem;color:var(--gold);letter-spacing:2px;font-weight:800;text-transform:uppercase}
-.hero .title{font-size:1.36rem;font-weight:800;color:#fff;margin-top:5px;line-height:1.3;letter-spacing:-.01em}
+.hero .title{font-size:1.36rem;font-weight:800;color:var(--text);margin-top:5px;line-height:1.3;letter-spacing:-.01em}
 .hero .why{font-size:.84rem;color:var(--muted);margin-top:7px}
 .hero .acts{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}
 .bigbtn{flex:1;min-width:120px;text-align:center;padding:13px;border-radius:14px;font-weight:800;font-size:.87rem;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .14s var(--spring)}
@@ -181,7 +181,7 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 
 /* list rows */
 .row{display:flex;gap:11px;align-items:center;background:var(--card);border:1px solid var(--hair);border-radius:15px;padding:12px;margin-bottom:9px;box-shadow:var(--hi)}
-.row.now{border-color:rgba(255,90,54,.5);background:linear-gradient(135deg,rgba(255,90,54,.13),rgba(255,255,255,.03))}
+.row.now{border-color:rgba(255,90,54,.45);background:linear-gradient(135deg,rgba(255,90,54,.09),rgba(255,255,255,.35))}
 .row.done{opacity:.5}
 .row .lead{width:44px;flex-shrink:0;text-align:center;font-weight:800;font-size:.8rem;color:var(--gold);font-variant-numeric:tabular-nums}
 .row .lead .em{font-size:1.4rem}
@@ -197,9 +197,9 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 .mini-h{font-size:.7rem;color:var(--muted);letter-spacing:1px;font-weight:700;margin:16px 0 8px}
 
 /* nav steps */
-.navtot{background:linear-gradient(135deg,rgba(10,132,255,.20),rgba(255,255,255,.03));border:1px solid rgba(10,132,255,.5);border-radius:18px;padding:16px;margin-bottom:14px;text-align:center;box-shadow:0 10px 30px rgba(10,132,255,.14),var(--hi)}
-.navtot .big{font-size:1.8rem;font-weight:800;color:#fff;letter-spacing:-.02em}
-.navtot .sub{font-size:.8rem;color:#b9d4f2;margin-top:3px}
+.navtot{background:linear-gradient(135deg,rgba(0,122,255,.12),rgba(255,255,255,.40));border:1px solid rgba(0,122,255,.35);border-radius:18px;padding:16px;margin-bottom:14px;text-align:center;box-shadow:0 10px 30px rgba(0,122,255,.10),var(--hi)}
+.navtot .big{font-size:1.8rem;font-weight:800;color:var(--text);letter-spacing:-.02em}
+.navtot .sub{font-size:.8rem;color:#3a6ea8;margin-top:3px}
 .origin-sel{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--hair);border-radius:13px;padding:10px 12px;margin-bottom:13px;font-size:.82rem}
 .origin-sel select{flex:1;background:var(--surface);color:var(--text);border:1px solid var(--hair);border-radius:10px;padding:9px;font-size:.82rem;font-family:inherit}
 .step{display:flex;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line)}
@@ -214,13 +214,13 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 /* achievements */
 .achv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .achv{background:var(--card);border:1px solid var(--hair);border-radius:18px;padding:16px 10px;text-align:center;box-shadow:var(--hi)}
-.achv.got{border-color:rgba(255,194,77,.55);background:linear-gradient(135deg,rgba(255,194,77,.16),rgba(255,255,255,.03))}
+.achv.got{border-color:rgba(184,114,10,.45);background:linear-gradient(135deg,rgba(255,159,10,.14),rgba(255,255,255,.35))}
 .achv .emoji{font-size:2rem;filter:grayscale(1);opacity:.35}
 .achv.got .emoji{filter:none;opacity:1}
 .achv .an{font-size:.82rem;font-weight:800;margin-top:6px}
 .achv .ad{font-size:.66rem;color:var(--muted);margin-top:3px;line-height:1.35}
 .progwrap{background:var(--card);border:1px solid var(--hair);border-radius:15px;padding:14px 16px;margin-bottom:13px;box-shadow:var(--hi)}
-.progbar{height:9px;background:rgba(0,0,0,.35);border-radius:9px;overflow:hidden;margin-top:8px}
+.progbar{height:9px;background:rgba(120,120,128,.18);border-radius:9px;overflow:hidden;margin-top:8px}
 .progbar .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:9px;transition:.4s}
 
 /* reminders */
@@ -243,7 +243,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:10px 0}
 .menu-item .ch{margin-left:auto;color:var(--muted)}
 
 /* toast */
-#toast{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + var(--safe-bot) + 130px);transform:translateX(-50%) translateY(20px);z-index:1400;background:var(--pane-strong);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);border:1px solid rgba(255,194,77,.5);color:var(--text);padding:14px 22px;border-radius:18px;font-size:.88rem;font-weight:700;box-shadow:var(--shadow-lg),var(--hi);opacity:0;pointer-events:none;transition:.3s var(--spring);max-width:90vw;text-align:center}
+#toast{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + var(--safe-bot) + 130px);transform:translateX(-50%) translateY(20px);z-index:1400;background:var(--pane-strong);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);border:1px solid rgba(184,114,10,.40);color:var(--text);padding:14px 22px;border-radius:18px;font-size:.88rem;font-weight:700;box-shadow:var(--shadow-lg),var(--hi);opacity:0;pointer-events:none;transition:.3s var(--spring);max-width:90vw;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast .em{font-size:1.5rem;display:block;margin-bottom:3px}
 
@@ -399,7 +399,7 @@ const STATION=[
   {id:'s-yodoyabashi',name:'淀屋橋',lat:34.6925,lng:135.5010,status:'ok',day:'回程疏散口',note:'御堂筋線／京阪，回程疏散口。'},
   {id:'s-kyobashi',name:'京橋',lat:34.6970,lng:135.5340,status:'best',day:'大站疏散力強',note:'JR／京阪／地下鐵大站，散場最推薦回程口。'},
 ];
-const SSTAT={avoid:{c:'#ff453a',t:'全力避開'},warn:{c:'#ffcc33',t:'管制/擁擠'},ok:{c:'#0a84ff',t:'疏散口'},best:{c:'#34c759',t:'推薦回程'}};
+const SSTAT={avoid:{c:'#ff453a',t:'全力避開'},warn:{c:'#e0a500',t:'管制/擁擠'},ok:{c:'#007aff',t:'疏散口'},best:{c:'#34c759',t:'推薦回程'}};
 
 const CROWD=[
   {id:'c-shoutengai',name:'天神橋筋商店街',lat:34.6975,lng:135.5108,r:520,
@@ -415,7 +415,7 @@ const CROWD=[
   {id:'c-taxi',name:'全區叫車困難',lat:34.6975,lng:135.5155,r:900,faint:true,
    win:[{d:25,from:'21:00',to:'22:30',lv:'red',note:'計程車叫不到'}]},
 ];
-const LV={red:{c:'#ff453a',t:'紅',w:'極擁擠'},yellow:{c:'#ffcc33',t:'黃',w:'漸擁擠'},green:{c:'#34c759',t:'綠',w:'順暢'}};
+const LV={red:{c:'#ff453a',t:'紅',w:'極擁擠'},yellow:{c:'#e0a500',t:'黃',w:'漸擁擠'},green:{c:'#34c759',t:'綠',w:'順暢'}};
 function crowdLevelAt(zone,f){ if(!isFestDayF(f))return'green'; let lv='green'; for(const w of zone.win){ if(w.d!==f.day)continue; if(f.hm>=toMin(w.from)&&f.hm<toMin(w.to)){ if(w.lv==='red')return'red'; if(w.lv==='yellow')lv='yellow'; } } return lv; }
 function activeWindowNote(zone,f){ for(const w of zone.win){ if(w.d===f.day&&f.hm>=toMin(w.from)&&f.hm<toMin(w.to))return w.note||null; } return null; }
 
@@ -587,7 +587,7 @@ const LAYER_KEYS=['matsuri','yatai','hanabi','station','crowd','route'];
 function initMap(){
   try{
     map=L.map('map',{zoomControl:false,attributionControl:true,tap:true}).setView([34.6985,135.5165],14);
-    tileLayer=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:20,minZoom:11,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO',crossOrigin:true});
+    tileLayer=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:20,minZoom:11,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO',crossOrigin:true});
     let tileErrors=0,tileOk=false;
     tileLayer.on('tileerror',()=>{ tileErrors++; if(!tileOk&&tileErrors>=4)enterFallback(); });
     tileLayer.on('tileload',()=>{ tileOk=true; });
@@ -603,7 +603,7 @@ function enterFallback(){ if(fallbackMode)return; fallbackMode=true; document.ge
 function exitFallback(){ fallbackMode=false; document.getElementById('fallback').classList.add('hidden'); if(map)setTimeout(()=>map.invalidateSize(),120); }
 
 function divPin(color,emoji,size){ size=size||26; return L.divIcon({className:'',html:`<div class="pin" style="background:${color};width:${size}px;height:${size}px"><span>${emoji}</span></div>`,iconSize:[size,size],iconAnchor:[size/2,size],popupAnchor:[0,-size]}); }
-function labelIcon(txt,bg){ return L.divIcon({className:'',html:`<div class="zlabel" style="background:${bg||'rgba(30,26,24,.9)'}">${txt}</div>`,iconSize:[10,10]}); }
+function labelIcon(txt,bg){ return L.divIcon({className:'',html:`<div class="zlabel" style="background:${bg||'rgba(255,255,255,.92)'}">${txt}</div>`,iconSize:[10,10]}); }
 
 function buildStaticMarkers(){
   MATSURI.forEach(p=>{ const mk=L.marker([p.lat,p.lng],{icon:divPin(getComputedStyle(document.documentElement).getPropertyValue('--accent')||'#f0512f',p.emoji)}); mk.on('click',()=>openSpot(p,'matsuri')); mLayers.matsuri.addLayer(mk); });
@@ -636,12 +636,12 @@ function rebuildRoute(){
     const activeHere=g.some(x=>ROUTE.indexOf(x)===activeIdx);
     const isHanabiSpot=g.some(x=>x.type==='hanabi'); let mk;
     if(isHanabiSpot){
-      mk=L.marker([g[0].lat,g[0].lng],{zIndexOffset:1600,icon:L.divIcon({className:'',html:`<div style="position:relative"><div style="background:#ff453a;border:3px solid #fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 10px rgba(0,0,0,.5)">🎆</div><div style="position:absolute;top:38px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#ff453a;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:9px;box-shadow:0 1px 4px rgba(0,0,0,.5)">我的觀賞點</div></div>`,iconSize:[36,36],iconAnchor:[18,18]})});
+      mk=L.marker([g[0].lat,g[0].lng],{zIndexOffset:1600,icon:L.divIcon({className:'',html:`<div style="position:relative"><div style="background:#ff453a;border:3px solid #fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 10px rgba(0,0,0,.30)">🎆</div><div style="position:absolute;top:38px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#ff453a;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:9px;box-shadow:0 1px 4px rgba(0,0,0,.30)">我的觀賞點</div></div>`,iconSize:[36,36],iconAnchor:[18,18]})});
     }else{ let cls='route-dot'; if(activeHere)cls+=' active'; else if(allDone)cls+=' done'; mk=L.marker([g[0].lat,g[0].lng],{zIndexOffset:1000,icon:L.divIcon({className:'',html:`<div class="${cls}">${allDone?'✓':label}</div>`,iconSize:[27,27],iconAnchor:[13,13]})}); }
     mk.on('click',()=>openRouteGroup(g)); mLayers.route.addLayer(mk);
   });
   const days=routeDay==='both'?[24,25]:[routeDay];
-  days.forEach(day=>{ const seg=ROUTE.filter(r=>r.d===day).map(r=>[r.lat,r.lng]); if(seg.length>1)mLayers.route.addLayer(L.polyline(seg,{color:'#25d0e6',weight:3,opacity:.55,dashArray:'6 7'})); });
+  days.forEach(day=>{ const seg=ROUTE.filter(r=>r.d===day).map(r=>[r.lat,r.lng]); if(seg.length>1)mLayers.route.addLayer(L.polyline(seg,{color:'#0a9fbe',weight:3,opacity:.6,dashArray:'6 7'})); });
 }
 
 /* =====================================================================
@@ -788,9 +788,9 @@ function drawNav(pts,dest,name){
   if(!navLayer){ return; }
   navLayer.clearLayers();
   if(fallbackMode)exitFallback();
-  // 白色底 + 藍線（Google 風）
+  // 白色描邊 + 藍線（Apple 導航風）
   navLayer.addLayer(L.polyline(pts,{color:'#ffffff',weight:9,opacity:.9,lineJoin:'round',lineCap:'round'}));
-  navLayer.addLayer(L.polyline(pts,{color:'#0a84ff',weight:5,opacity:1,lineJoin:'round',lineCap:'round'}));
+  navLayer.addLayer(L.polyline(pts,{color:'#007aff',weight:5,opacity:1,lineJoin:'round',lineCap:'round'}));
   navLayer.addLayer(L.marker([dest.lat,dest.lng],{zIndexOffset:2200,icon:L.divIcon({className:'',html:`<div class="nav-end"><span>🚩</span></div>`,iconSize:[34,34],iconAnchor:[17,34]})}));
   if(map){ try{ map.fitBounds(L.latLngBounds(pts),{paddingTopLeft:[40,150],paddingBottomRight:[40,220]}); }catch(e){} }
 }
@@ -878,7 +878,7 @@ function hanabiCountdownHtml(){
     sub='距 7/25 19:30 奉納花火開始';
   } else if(t<=end){ big='🎆 花火進行中！'; sub='19:30–20:50 · 頭頂近景，別移動'; }
   else { big='今年花火已結束 🎆'; sub='散場請往京橋，勿衝桜ノ宮駅'; }
-  return `<div class="navtot" style="background:linear-gradient(135deg,#3a1d4d,#231a3a);border-color:#a855f7"><div class="big">${big}</div><div class="sub" style="color:#d8bff2">${sub}</div></div>`;
+  return `<div class="navtot" style="background:linear-gradient(135deg,rgba(168,85,247,.14),rgba(255,255,255,.40));border-color:rgba(168,85,247,.45)"><div class="big">${big}</div><div class="sub" style="color:#7c3aed">${sub}</div></div>`;
 }
 
 /* ---------- 屋台美食制覇 ---------- */
