@@ -3,307 +3,378 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0e1117">
-<title>大阪天神祭 情報地圖</title>
+<meta name="theme-color" content="#141110">
+<title>大阪天神祭 · 祭典導航</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
-/* ── Reset & Base ── */
+/* ============ Base ============ */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#0e1117; --surface:#161b22; --surface2:#1f2630; --line:#2a323d;
-  --text:#e8edf2; --muted:#8b98a8; --accent:#e8552f; --accent2:#ffb84d;
-  --green:#2ea043; --yellow:#d9a520; --red:#e5484d;
-  --blue:#3b82f6; --purple:#a855f7; --route:#22d3ee;
-  --shadow:0 4px 18px rgba(0,0,0,.45);
+  --bg:#0b0a0f; --surface:#16151c; --surface2:#1f1e27; --line:rgba(255,255,255,.09);
+  --text:#f3f1f6; --muted:#9d99ab;
+  --accent:#ff5a36; --gold:#ffc24d;
+  --green:#34c759; --yellow:#ffcc33; --red:#ff453a; --blue:#0a84ff;
+  --route:#3dd7ee;
+  /* ── glass materials ── */
+  --glass:saturate(180%) blur(22px);
+  --glass-strong:saturate(180%) blur(30px);
+  --pane:rgba(24,23,30,.62);
+  --pane-strong:rgba(18,17,24,.80);
+  --card:rgba(255,255,255,.045);
+  --hair:rgba(255,255,255,.10);
+  --hi:inset 0 1px 0 rgba(255,255,255,.10);
+  --shadow:0 8px 30px rgba(0,0,0,.55);
+  --shadow-lg:0 22px 55px rgba(0,0,0,.62);
+  --spring:cubic-bezier(.32,.72,0,1);
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bot:env(safe-area-inset-bottom,0px);
+  --tabbar-h:66px;
 }
 html,body{height:100%;overflow:hidden}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
-  background:var(--bg); color:var(--text); line-height:1.5;
+  background:var(--bg); color:var(--text); line-height:1.55;
   -webkit-font-smoothing:antialiased; overscroll-behavior:none;
 }
 button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:none}
 .hidden{display:none!important}
 
-/* ── Top status bar ── */
+/* ============ Top bar ============ */
 #topbar{
   position:fixed; top:0; left:0; right:0; z-index:1200;
-  background:var(--surface); border-bottom:1px solid var(--line);
-  padding:calc(var(--safe-top) + 8px) 12px 8px; box-shadow:var(--shadow);
+  background:linear-gradient(180deg,rgba(11,10,15,.78),rgba(11,10,15,.28) 82%,rgba(11,10,15,0));
+  backdrop-filter:var(--glass); -webkit-backdrop-filter:var(--glass);
+  padding:calc(var(--safe-top) + 11px) 14px 16px;
 }
-#topbar .row1{display:flex;align-items:center;gap:8px;justify-content:space-between}
-#clock{font-variant-numeric:tabular-nums;font-weight:700;font-size:1.15rem;letter-spacing:.5px}
-#clock .day{font-size:.72rem;color:var(--accent2);font-weight:600;margin-left:6px}
-#taskLine{margin-top:5px;display:flex;align-items:center;gap:8px;font-size:.86rem}
-#taskLine .tag{font-size:.64rem;background:var(--accent);color:#fff;padding:2px 7px;border-radius:5px;font-weight:700;flex-shrink:0}
-#taskLine .txt{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#countdown{margin-top:4px;font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:6px}
-#countdown b{color:var(--accent2);font-variant-numeric:tabular-nums}
-#topTools{display:flex;gap:6px}
-.iconbtn{width:34px;height:34px;border-radius:8px;background:var(--surface2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:1rem}
-.iconbtn:active{background:var(--accent)}
+#topbar .row1{display:flex;align-items:center;gap:10px}
+#clock{font-variant-numeric:tabular-nums;font-weight:800;font-size:1.2rem;letter-spacing:.5px;white-space:nowrap}
+#clock .day{font-size:.68rem;color:var(--gold);font-weight:700;margin-left:5px;background:rgba(255,194,77,.13);padding:2px 6px;border-radius:6px}
+#topRight{margin-left:auto;display:flex;gap:7px;align-items:center}
+.tbtn{height:38px;padding:0 12px;border-radius:19px;background:var(--pane);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);border:1px solid var(--hair);box-shadow:var(--hi);display:flex;align-items:center;gap:6px;font-size:.84rem;font-weight:700;color:var(--text);transition:transform .12s var(--spring)}
+.tbtn svg{width:19px;height:19px}
+.tbtn:active{transform:scale(.9)}
+.tbtn .n{color:var(--gold);font-variant-numeric:tabular-nums}
+#taskChip{
+  margin-top:10px; display:flex; align-items:center; gap:9px;
+  background:var(--pane); backdrop-filter:var(--glass); -webkit-backdrop-filter:var(--glass);
+  border:1px solid var(--hair); border-radius:15px;
+  padding:9px 13px; font-size:.82rem; box-shadow:var(--shadow),var(--hi);
+}
+#taskChip .tg{font-size:.6rem;background:var(--accent);color:#fff;padding:3px 8px;border-radius:7px;font-weight:800;flex-shrink:0;letter-spacing:.5px}
+#taskChip .tx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+#taskChip .cd{flex-shrink:0;color:var(--gold);font-weight:800;font-variant-numeric:tabular-nums;font-size:.78rem}
 
-/* ── Map ── */
-#map{position:absolute;top:0;bottom:0;left:0;right:0;background:#e7e5e0;z-index:1}
-.leaflet-container{background:#e7e5e0;font-family:inherit}
-.leaflet-popup-content-wrapper{background:var(--surface2);color:var(--text);border-radius:12px;box-shadow:var(--shadow)}
+/* ============ Map ============ */
+#map{position:absolute;top:0;bottom:0;left:0;right:0;background:#0b0a0f;z-index:1}
+.leaflet-container{background:#0b0a0f;font-family:inherit}
+.leaflet-popup-content-wrapper{background:var(--surface2);color:var(--text);border-radius:14px;box-shadow:var(--shadow)}
 .leaflet-popup-tip{background:var(--surface2)}
 .leaflet-popup-content{margin:12px 14px;font-size:.85rem;line-height:1.55}
-.leaflet-popup-content b{color:var(--accent2)}
-.leaflet-bar a{background:var(--surface2);color:var(--text);border-color:var(--line)}
-.leaflet-control-attribution{background:rgba(15,18,24,.7)!important;color:var(--muted)!important;font-size:9px!important}
+.leaflet-popup-content b{color:var(--gold)}
+.leaflet-control-attribution{background:rgba(15,12,11,.7)!important;color:var(--muted)!important;font-size:9px!important}
 .leaflet-control-attribution a{color:var(--muted)!important}
+.leaflet-control-zoom{display:none}
 
-/* custom markers */
-.pin{display:flex;align-items:center;justify-content:center;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5);font-weight:700}
-.pin span{transform:rotate(45deg);font-size:12px;line-height:1}
-.route-dot{width:26px;height:26px;border-radius:50%;background:var(--route);border:3px solid #fff;color:#04222b;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+/* markers */
+.pin{display:flex;align-items:center;justify-content:center;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.5);font-weight:700}
+.pin span{transform:rotate(45deg);font-size:13px;line-height:1}
+.route-dot{width:27px;height:27px;border-radius:50%;background:var(--route);border:3px solid #fff;color:#04222b;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.5)}
 .route-dot.active{background:var(--accent);color:#fff;animation:pulse 1.6s infinite}
 .route-dot.done{background:var(--green);color:#fff}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(232,85,47,.6)}70%{box-shadow:0 0 0 14px rgba(232,85,47,0)}100%{box-shadow:0 0 0 0 rgba(232,85,47,0)}}
-.gps-dot{width:18px;height:18px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 6px rgba(59,130,246,.25),0 2px 6px rgba(0,0,0,.5)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(240,81,47,.6)}70%{box-shadow:0 0 0 15px rgba(240,81,47,0)}100%{box-shadow:0 0 0 0 rgba(240,81,47,0)}}
+.gps-dot{width:18px;height:18px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 7px rgba(10,132,255,.22),0 2px 6px rgba(0,0,0,.5)}
+.nav-end{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--accent);border:3px solid #fff;box-shadow:0 2px 9px rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center}
+.nav-end span{transform:rotate(45deg);font-size:15px}
+.zlabel{background:rgba(30,26,24,.9);color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:11px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15)}
 
-/* ── Fallback text mode ── */
-#fallback{position:absolute;top:0;bottom:0;left:0;right:0;z-index:5;background:var(--bg);overflow-y:auto;padding:0 0 120px;-webkit-overflow-scrolling:touch}
-#fallback .fb-inner{padding:14px}
-#fallback .fb-note{background:var(--surface2);border:1px solid var(--accent);border-radius:10px;padding:10px 12px;font-size:.78rem;color:var(--accent2);margin-bottom:12px}
-.fb-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
-.fb-card h3,.fb-card h4{font-size:.95rem;margin-bottom:6px;display:flex;align-items:center;gap:7px}
-.fb-card .badge{font-size:.62rem;padding:2px 7px;border-radius:20px;font-weight:700}
-.fb-card ul{list-style:none;font-size:.82rem}
-.fb-card li{padding:3px 0;border-bottom:1px dashed var(--line);color:var(--muted)}
-.fb-card li:last-child{border:none}
-.fb-card li b{color:var(--text)}
-.fb-card p{font-size:.82rem;color:var(--muted)}
-
-/* ── Layer control panel (bottom) ── */
-#layerBar{
-  position:fixed; left:0; right:0; bottom:0; z-index:1150;
-  background:var(--surface); border-top:1px solid var(--line);
-  padding:8px 8px calc(var(--safe-bot) + 8px); box-shadow:0 -4px 18px rgba(0,0,0,.4);
+/* ============ Nav banner (during navigation) ============ */
+#navBanner{
+  position:fixed; left:10px; right:10px; top:calc(var(--safe-top) + 9px); z-index:1250;
+  background:linear-gradient(135deg,rgba(10,132,255,.90),rgba(7,104,209,.90)); color:#fff;
+  backdrop-filter:var(--glass); -webkit-backdrop-filter:var(--glass);
+  border:1px solid rgba(255,255,255,.20);
+  border-radius:20px; padding:12px 14px; box-shadow:var(--shadow-lg),var(--hi);
+  display:flex; align-items:center; gap:12px; animation:drop .34s var(--spring);
 }
-#layerScroll{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-#layerScroll::-webkit-scrollbar{display:none}
-.layer-chip{flex-shrink:0;display:flex;align-items:center;gap:6px;background:var(--surface2);border:1.5px solid var(--line);border-radius:22px;padding:8px 13px;font-size:.8rem;font-weight:600;white-space:nowrap;transition:.15s}
-.layer-chip .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.layer-chip.off{opacity:.4;filter:grayscale(.6)}
-.layer-chip:active{transform:scale(.95)}
+@keyframes drop{from{transform:translateY(-16px);opacity:0}to{transform:translateY(0);opacity:1}}
+#navBanner .ar{flex-shrink:0;display:flex}
+#navBanner .ar svg{width:26px;height:26px}
+#navBanner .mid{flex:1;min-width:0}
+#navBanner .mid .to{font-weight:800;font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#navBanner .mid .meta{font-size:.76rem;opacity:.92;margin-top:1px}
+#navBanner .stop{flex-shrink:0;background:rgba(255,255,255,.2);border-radius:10px;padding:8px 11px;font-size:.78rem;font-weight:800}
 
-/* ── Floating action buttons ── */
-#fabWrap{position:fixed;right:12px;z-index:1140;bottom:calc(var(--safe-bot) + 74px);display:flex;flex-direction:column;gap:10px;align-items:flex-end}
-.fab{border-radius:28px;box-shadow:var(--shadow);font-weight:700;display:flex;align-items:center;gap:7px;justify-content:center}
-.fab.main{background:var(--accent);color:#fff;padding:14px 18px;font-size:.92rem}
-.fab.round{width:48px;height:48px;background:var(--surface2);border:1px solid var(--line);font-size:1.2rem;padding:0}
-.fab.round.active{background:var(--blue)}
-.fab:active{transform:scale(.94)}
+/* ============ Bottom tab bar ============ */
+#tabbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:1150;
+  height:calc(var(--tabbar-h) + var(--safe-bot)); padding-bottom:var(--safe-bot);
+  background:var(--pane-strong);
+  backdrop-filter:var(--glass); -webkit-backdrop-filter:var(--glass);
+  border-top:1px solid var(--hair); box-shadow:0 -1px 0 rgba(255,255,255,.05),var(--shadow);
+  display:flex; align-items:stretch;
+}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);font-size:.66rem;font-weight:700;position:relative;transition:color .18s}
+.tab .ic{width:25px;height:25px;display:flex;align-items:center;justify-content:center;opacity:.66;transition:transform .22s var(--spring),opacity .18s}
+.tab .ic svg{width:25px;height:25px}
+.tab.on{color:var(--gold)}
+.tab.on .ic{opacity:1;transform:translateY(-1px) scale(1.06)}
+.tab.on::before{content:"";position:absolute;top:0;width:24px;height:3px;border-radius:0 0 3px 3px;background:var(--gold);box-shadow:0 0 10px rgba(255,194,77,.6)}
+.tab:active .ic{transform:scale(.86)}
 
-/* ── Bottom sheet / modal ── */
+/* ============ Floating CTA + GPS ============ */
+#ctaWrap{position:fixed;left:0;right:0;bottom:calc(var(--tabbar-h) + var(--safe-bot) + 12px);z-index:1140;display:flex;justify-content:center;pointer-events:none;padding:0 14px}
+#ctaBtn{
+  pointer-events:auto; background:linear-gradient(180deg,#ff6f4b,#f0451f); color:#fff;
+  padding:15px 24px; border-radius:32px; font-weight:800; font-size:.95rem;
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 12px 34px rgba(240,69,31,.5),var(--hi); display:flex; align-items:center; gap:8px;
+  max-width:100%; transition:transform .14s var(--spring);
+}
+#ctaBtn svg{width:18px;height:18px}
+#ctaBtn:active{transform:scale(.94)}
+#fabGps{
+  position:fixed; right:14px; bottom:calc(var(--tabbar-h) + var(--safe-bot) + 78px); z-index:1141;
+  width:50px; height:50px; border-radius:50%; background:var(--pane);
+  backdrop-filter:var(--glass); -webkit-backdrop-filter:var(--glass);
+  border:1px solid var(--hair); box-shadow:var(--shadow),var(--hi); color:var(--text);
+  display:flex; align-items:center; justify-content:center; transition:transform .12s var(--spring);
+}
+#fabGps svg{width:22px;height:22px}
+#fabGps.active{background:var(--blue);border-color:var(--blue);color:#fff}
+#fabGps:active{transform:scale(.9)}
+
+/* ============ Alert banner ============ */
+#alertBanner{position:fixed;left:8px;right:8px;top:calc(var(--safe-top) + 96px);z-index:1180;background:linear-gradient(135deg,var(--red),#c62a25);color:#fff;border-radius:14px;padding:12px 14px;font-size:.84rem;font-weight:700;box-shadow:var(--shadow);display:flex;gap:9px;align-items:center;animation:drop .4s}
+#alertBanner .x{margin-left:auto;font-size:1.2rem;opacity:.9}
+
+/* ============ Bottom sheet ============ */
 #sheetMask{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.25s}
 #sheetMask.show{opacity:1;pointer-events:auto}
-#sheet{position:fixed;left:0;right:0;bottom:0;z-index:1310;background:var(--surface);border-radius:20px 20px 0 0;max-height:86vh;transform:translateY(105%);transition:transform .3s cubic-bezier(.25,.9,.3,1);display:flex;flex-direction:column;box-shadow:0 -8px 30px rgba(0,0,0,.5)}
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:1310;background:var(--pane-strong);backdrop-filter:var(--glass-strong);-webkit-backdrop-filter:var(--glass-strong);border-radius:26px 26px 0 0;border:1px solid var(--hair);border-bottom:none;max-height:90vh;transform:translateY(105%);transition:transform .44s var(--spring);display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
 #sheet.show{transform:translateY(0)}
-#sheet .grip{width:42px;height:5px;border-radius:5px;background:var(--line);margin:10px auto 4px}
-#sheet .sheet-head{display:flex;align-items:center;justify-content:space-between;padding:6px 16px 10px;border-bottom:1px solid var(--line)}
-#sheet .sheet-head h2{font-size:1.05rem}
-#sheet .sheet-body{overflow-y:auto;padding:14px 16px calc(var(--safe-bot) + 20px);-webkit-overflow-scrolling:touch}
-.closex{width:32px;height:32px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--muted)}
+#sheet .grip{width:38px;height:5px;border-radius:5px;background:rgba(255,255,255,.22);margin:10px auto 2px}
+#sheet .sheet-head{display:flex;align-items:center;justify-content:space-between;padding:6px 18px 13px;border-bottom:1px solid var(--hair)}
+#sheet .sheet-head h2{font-size:1.15rem;font-weight:800;letter-spacing:-.01em}
+#sheet .sheet-body{overflow-y:auto;padding:16px 16px calc(var(--safe-bot) + 24px);-webkit-overflow-scrolling:touch}
+.closex{width:32px;height:32px;border-radius:50%;background:var(--card);border:1px solid var(--hair);display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0}
+.closex svg{width:15px;height:15px}
 
-/* generic components inside sheet */
-.rec-card{background:linear-gradient(135deg,#1f2630,#161b22);border:1px solid var(--accent);border-radius:14px;padding:15px;margin-bottom:12px}
-.rec-card .why{font-size:.8rem;color:var(--muted);margin-top:6px}
-.rec-card .title{font-size:1.15rem;font-weight:800;color:var(--accent2)}
-.rec-card .go{margin-top:10px;background:var(--accent);color:#fff;padding:8px 14px;border-radius:8px;font-weight:700;font-size:.82rem;display:inline-block}
-.mini-h{font-size:.72rem;color:var(--muted);letter-spacing:1px;margin:14px 0 7px}
+/* ============ Reusable cards ============ */
+.card{background:var(--card);border:1px solid var(--hair);border-radius:17px;padding:15px 16px;margin-bottom:11px;box-shadow:var(--hi)}
+.card h4{font-size:.94rem;margin-bottom:8px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;letter-spacing:-.01em}
+.card p,.card li{font-size:.85rem;color:var(--muted)}
+.card ul{list-style:none;margin-top:5px}
+.card li{padding:4px 0}
+.card li b{color:var(--text)}
+.badge{font-size:.62rem;padding:3px 9px;border-radius:20px;font-weight:800;color:#fff}
+.pill{display:inline-block;font-size:.64rem;padding:2px 8px;border-radius:20px;font-weight:800;margin:2px 3px 0 0;color:#fff}
 
-.route-item{display:flex;gap:10px;padding:11px;border-radius:12px;background:var(--surface2);margin-bottom:8px;border:1px solid var(--line)}
-.route-item.now{border-color:var(--accent);background:linear-gradient(135deg,#241a17,#1f2630)}
-.route-item.done{opacity:.6}
-.route-item .rtime{font-weight:800;font-size:.82rem;color:var(--accent2);flex-shrink:0;width:52px;font-variant-numeric:tabular-nums}
-.route-item .rmain{flex:1;min-width:0}
-.route-item .rmain .rt{font-weight:700;font-size:.9rem}
-.route-item .rmain .rd{font-size:.76rem;color:var(--muted);margin-top:2px}
-.route-item .rchk{flex-shrink:0}
-.chkbtn{background:var(--surface);border:1.5px solid var(--line);border-radius:20px;padding:6px 11px;font-size:.72rem;font-weight:700;color:var(--muted)}
+.hero{background:linear-gradient(135deg,rgba(255,90,54,.16),rgba(255,255,255,.03));border:1px solid rgba(255,90,54,.45);border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 12px 34px rgba(255,90,54,.13),var(--hi)}
+.hero .kick{font-size:.66rem;color:var(--gold);letter-spacing:2px;font-weight:800;text-transform:uppercase}
+.hero .title{font-size:1.36rem;font-weight:800;color:#fff;margin-top:5px;line-height:1.3;letter-spacing:-.01em}
+.hero .why{font-size:.84rem;color:var(--muted);margin-top:7px}
+.hero .acts{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}
+.bigbtn{flex:1;min-width:120px;text-align:center;padding:13px;border-radius:14px;font-weight:800;font-size:.87rem;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .14s var(--spring)}
+.bigbtn.primary{background:linear-gradient(180deg,#ff6f4b,#f0451f);color:#fff;box-shadow:0 6px 18px rgba(240,69,31,.4),var(--hi)}
+.bigbtn.ghost{background:var(--card);border:1px solid var(--hair);color:var(--text);box-shadow:var(--hi)}
+.bigbtn:active{transform:scale(.95)}
+
+/* list rows */
+.row{display:flex;gap:11px;align-items:center;background:var(--card);border:1px solid var(--hair);border-radius:15px;padding:12px;margin-bottom:9px;box-shadow:var(--hi)}
+.row.now{border-color:rgba(255,90,54,.5);background:linear-gradient(135deg,rgba(255,90,54,.13),rgba(255,255,255,.03))}
+.row.done{opacity:.5}
+.row .lead{width:44px;flex-shrink:0;text-align:center;font-weight:800;font-size:.8rem;color:var(--gold);font-variant-numeric:tabular-nums}
+.row .lead .em{font-size:1.4rem}
+.row .body{flex:1;min-width:0}
+.row .body .t{font-weight:700;font-size:.9rem}
+.row .body .d{font-size:.77rem;color:var(--muted);margin-top:2px}
+.row .go{flex-shrink:0}
+.gobtn{background:var(--blue);color:#fff;border-radius:12px;padding:9px 13px;font-size:.76rem;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(10,132,255,.35)}
+.gobtn.ghost{background:var(--card);border:1px solid var(--hair);color:var(--muted);box-shadow:none}
+.chkbtn{background:var(--card);border:1px solid var(--hair);border-radius:20px;padding:8px 14px;font-size:.74rem;font-weight:800;color:var(--muted);white-space:nowrap}
 .chkbtn.done{background:var(--green);border-color:var(--green);color:#fff}
 
-.achv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.achv{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:14px 10px;text-align:center}
-.achv.got{border-color:var(--accent2);background:linear-gradient(135deg,#2a2418,#1f2630)}
-.achv .emoji{font-size:1.9rem;filter:grayscale(1);opacity:.4}
-.achv.got .emoji{filter:none;opacity:1}
-.achv .an{font-size:.82rem;font-weight:700;margin-top:5px}
-.achv .ad{font-size:.66rem;color:var(--muted);margin-top:3px;line-height:1.35}
-.achv .prog{font-size:.66rem;color:var(--accent2);margin-top:4px;font-weight:700}
+.mini-h{font-size:.7rem;color:var(--muted);letter-spacing:1px;font-weight:700;margin:16px 0 8px}
 
-.remind-item{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--line);font-size:.86rem}
+/* nav steps */
+.navtot{background:linear-gradient(135deg,rgba(10,132,255,.20),rgba(255,255,255,.03));border:1px solid rgba(10,132,255,.5);border-radius:18px;padding:16px;margin-bottom:14px;text-align:center;box-shadow:0 10px 30px rgba(10,132,255,.14),var(--hi)}
+.navtot .big{font-size:1.8rem;font-weight:800;color:#fff;letter-spacing:-.02em}
+.navtot .sub{font-size:.8rem;color:#b9d4f2;margin-top:3px}
+.origin-sel{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--hair);border-radius:13px;padding:10px 12px;margin-bottom:13px;font-size:.82rem}
+.origin-sel select{flex:1;background:var(--surface);color:var(--text);border:1px solid var(--hair);border-radius:10px;padding:9px;font-size:.82rem;font-family:inherit}
+.step{display:flex;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line)}
+.step:last-child{border:none}
+.step .num{width:26px;height:26px;flex-shrink:0;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem}
+.step .num.fin{background:var(--accent)}
+.step .sbody{flex:1;min-width:0}
+.step .sbody .st{font-weight:700;font-size:.87rem}
+.step .sbody .sm{font-size:.76rem;color:var(--muted);margin-top:2px}
+.step .sbody .warn{font-size:.76rem;color:var(--gold);margin-top:3px;font-weight:600}
+
+/* achievements */
+.achv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.achv{background:var(--card);border:1px solid var(--hair);border-radius:18px;padding:16px 10px;text-align:center;box-shadow:var(--hi)}
+.achv.got{border-color:rgba(255,194,77,.55);background:linear-gradient(135deg,rgba(255,194,77,.16),rgba(255,255,255,.03))}
+.achv .emoji{font-size:2rem;filter:grayscale(1);opacity:.35}
+.achv.got .emoji{filter:none;opacity:1}
+.achv .an{font-size:.82rem;font-weight:800;margin-top:6px}
+.achv .ad{font-size:.66rem;color:var(--muted);margin-top:3px;line-height:1.35}
+.progwrap{background:var(--card);border:1px solid var(--hair);border-radius:15px;padding:14px 16px;margin-bottom:13px;box-shadow:var(--hi)}
+.progbar{height:9px;background:rgba(0,0,0,.35);border-radius:9px;overflow:hidden;margin-top:8px}
+.progbar .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:9px;transition:.4s}
+
+/* reminders */
+.remind-item{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);font-size:.87rem}
 .remind-item:last-child{border:none}
-.remind-item .ck{width:22px;height:22px;border-radius:6px;border:2px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.8rem}
+.remind-item .ck{width:24px;height:24px;border-radius:7px;border:2px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.8rem}
 .remind-item.on .ck{background:var(--green);border-color:var(--green)}
 .remind-item.on .lbl{text-decoration:line-through;color:var(--muted)}
 
-.info-block{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
-.info-block h4{font-size:.9rem;margin-bottom:6px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-.info-block .badge{font-size:.6rem;padding:2px 7px;border-radius:20px;font-weight:700}
-.info-block p,.info-block li{font-size:.82rem;color:var(--muted)}
-.info-block ul{list-style:none;margin-top:4px}
-.info-block li{padding:3px 0}
-.info-block li b{color:var(--text)}
-.pill{display:inline-block;font-size:.62rem;padding:2px 8px;border-radius:20px;font-weight:700;margin:2px 3px 0 0}
+/* sim */
+.simrow{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.simbtn{flex:1;min-width:88px;background:var(--card);border:1px solid var(--hair);border-radius:12px;padding:11px 6px;font-size:.74rem;font-weight:700;text-align:center;box-shadow:var(--hi)}
+.simbtn.on{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 5px 14px rgba(255,90,54,.35)}
+input[type=range]{width:100%;accent-color:var(--accent);margin:10px 0}
 
-/* time simulator */
-#simPanel .simrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.simbtn{flex:1;min-width:70px;background:var(--surface2);border:1.5px solid var(--line);border-radius:10px;padding:9px 6px;font-size:.72rem;font-weight:700;text-align:center}
-.simbtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
-#simSlider{width:100%;margin:8px 0}
-input[type=range]{accent-color:var(--accent)}
+/* menu list */
+.menu-item{display:flex;align-items:center;gap:12px;padding:15px 4px;border-bottom:1px solid var(--line);font-size:.92rem;font-weight:600}
+.menu-item:last-child{border:none}
+.menu-item .mi{font-size:1.3rem;width:26px;text-align:center}
+.menu-item .ch{margin-left:auto;color:var(--muted)}
 
 /* toast */
-#toast{position:fixed;left:50%;bottom:calc(var(--safe-bot) + 150px);transform:translateX(-50%) translateY(20px);z-index:1400;background:var(--surface2);border:1px solid var(--accent2);color:var(--text);padding:12px 18px;border-radius:14px;font-size:.86rem;font-weight:600;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.3s;max-width:90vw;text-align:center}
+#toast{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + var(--safe-bot) + 130px);transform:translateX(-50%) translateY(20px);z-index:1400;background:var(--pane-strong);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);border:1px solid rgba(255,194,77,.5);color:var(--text);padding:14px 22px;border-radius:18px;font-size:.88rem;font-weight:700;box-shadow:var(--shadow-lg),var(--hi);opacity:0;pointer-events:none;transition:.3s var(--spring);max-width:90vw;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-#toast .em{font-size:1.4rem;display:block;margin-bottom:3px}
+#toast .em{font-size:1.5rem;display:block;margin-bottom:3px}
 
-/* alert banner */
-#alertBanner{position:fixed;left:8px;right:8px;top:calc(var(--safe-top) + 142px);z-index:1180;background:linear-gradient(135deg,var(--red),#b02a2f);color:#fff;border-radius:12px;padding:11px 14px;font-size:.82rem;font-weight:600;box-shadow:var(--shadow);display:flex;gap:9px;align-items:center;animation:slidein .4s}
-@keyframes slidein{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
-#alertBanner .x{margin-left:auto;font-size:1.2rem;opacity:.9}
-
-/* route day segmented control */
-#routeDayCtl{position:fixed;left:8px;top:calc(var(--safe-top) + 96px);z-index:1160;display:flex;align-items:center;gap:3px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:4px 5px;box-shadow:var(--shadow);font-size:.72rem}
-#routeDayCtl .rdlabel{color:var(--muted);font-weight:700;padding:0 3px}
-#routeDayCtl button{padding:5px 9px;border-radius:14px;font-weight:700;color:var(--muted)}
-#routeDayCtl button.on{background:var(--route);color:#04222b}
+/* fallback */
+#fallback{position:absolute;top:0;bottom:0;left:0;right:0;z-index:5;background:var(--bg);overflow-y:auto;padding:calc(var(--safe-top) + 120px) 0 calc(var(--tabbar-h) + 120px);-webkit-overflow-scrolling:touch}
+#fallback .fb-inner{padding:14px}
+#fallback .fb-note{background:var(--surface2);border:1px solid var(--accent);border-radius:12px;padding:11px 13px;font-size:.8rem;color:var(--gold);margin-bottom:13px}
 </style>
 </head>
 <body>
 
-<!-- ── TOP BAR ── -->
+<!-- TOP BAR -->
 <div id="topbar">
   <div class="row1">
     <div id="clock">--:--<span class="day"></span></div>
-    <div id="topTools">
-      <button class="iconbtn" id="btnSim" title="時間模擬">🕒</button>
-      <button class="iconbtn" id="btnRemind" title="提醒清單">🎒</button>
-      <button class="iconbtn" id="btnAchv" title="成就集章">🏅</button>
+    <div id="topRight">
+      <button class="tbtn" id="btnAchv" title="集章"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9.5" r="4.8"/><path d="M8.6 13.6L7 21l5-2.6L17 21l-1.6-7.4"/></svg><span class="n" id="achvN">0</span></button>
+      <button class="tbtn" id="btnMenu" title="更多"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5.5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18.5" cy="12" r="1.5"/></svg></button>
     </div>
   </div>
-  <div id="taskLine"><span class="tag">任務</span><span class="txt">載入中…</span></div>
-  <div id="countdown"></div>
+  <div id="taskChip"><span class="tg">現在</span><span class="tx">載入中…</span><span class="cd"></span></div>
 </div>
 
-<!-- ── MAP ── -->
+<!-- MAP -->
 <div id="map"></div>
 
-<!-- ── FALLBACK TEXT MODE ── -->
+<!-- FALLBACK -->
 <div id="fallback" class="hidden"><div class="fb-inner">
-  <div class="fb-note">📡 地圖圖磚載入失敗（現場網路壅塞）— 已切換為<b>文字情報模式</b>。以下依<b id="fbTime">目前時刻</b>提供重點。<button id="fbRetry" style="margin-left:6px;color:var(--accent2);text-decoration:underline">重試地圖</button></div>
+  <div class="fb-note">📡 地圖圖磚載入失敗（現場網路壅塞）— 已切換為<b>文字情報模式</b>。<button id="fbRetry" style="margin-left:6px;color:var(--gold);text-decoration:underline">重試地圖</button></div>
   <div id="fbContent"></div>
 </div></div>
 
-<!-- ── ROUTE DAY CONTROL ── -->
-<div id="routeDayCtl">
-  <span class="rdlabel">🧭 路線</span>
-  <button data-rd="24">7/24</button>
-  <button data-rd="25">7/25</button>
-  <button data-rd="both">兩日</button>
-</div>
+<!-- NAV BANNER -->
+<div id="navBanner" class="hidden"></div>
 
-<!-- ── ALERT BANNER ── -->
+<!-- ALERT BANNER -->
 <div id="alertBanner" class="hidden"></div>
 
-<!-- ── LAYER BAR ── -->
-<div id="layerBar"><div id="layerScroll"></div></div>
+<!-- FLOATING GPS + CTA -->
+<button id="fabGps" title="定位"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.4v3.1M12 18.5v3.1M2.4 12h3.1M18.5 12h3.1"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg></button>
+<div id="ctaWrap"><button id="ctaBtn"><span>現在去哪？</span></button></div>
 
-<!-- ── FABs ── -->
-<div id="fabWrap">
-  <button class="fab round" id="fabGps" title="定位">📍</button>
-  <button class="fab round" id="fabRoute" title="我的路線">🧭</button>
-  <button class="fab main" id="fabWhere">現在去哪 ➜</button>
-</div>
+<!-- BOTTOM TABBAR -->
+<div id="tabbar"></div>
 
-<!-- ── BOTTOM SHEET ── -->
+<!-- BOTTOM SHEET -->
 <div id="sheetMask"></div>
 <div id="sheet">
   <div class="grip"></div>
-  <div class="sheet-head"><h2 id="sheetTitle"></h2><button class="closex" id="sheetClose">✕</button></div>
+  <div class="sheet-head"><h2 id="sheetTitle"></h2><button class="closex" id="sheetClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <div class="sheet-body" id="sheetBody"></div>
 </div>
 
-<!-- ── TOAST ── -->
+<!-- TOAST -->
 <div id="toast"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 "use strict";
-/* ============================================================
-   大阪天神祭 情報地圖  —  單檔 webapp
-   ============================================================ */
+/* =====================================================================
+   大阪天神祭 · 祭典導航   —   單檔 webapp（重製版）
+   設計重點：下部5分頁 + 文脈CTA，祭典推薦路線導航，主要據點含屋台
+   ===================================================================== */
 
-/* ---------- 時間引擎（支援模擬） ---------- */
-const FEST_YEAR = 2026;
-let simOffset = null; // 若非 null，以此毫秒作為「現在」
+/* ---------- 圖示（inline SVG · SF 風格線條） ---------- */
+function _svg(inner,sw){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw||1.7}" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;}
+const TAB_ICONS={
+  now:_svg('<circle cx="12" cy="12" r="8.6"/><path d="M15.6 8.4l-2.1 5.1-5.1 2.1 2.1-5.1z"/>'),
+  yatai:_svg('<path d="M4 9.2l1.7-4.4h12.6L20 9.2"/><path d="M5.4 9.2v9.6h13.2V9.2"/><path d="M9 18.8v-4.4h6v4.4"/>'),
+  hanabi:_svg('<path d="M12 3.3l1.5 4.3 4.3 1.5-4.3 1.5L12 14.9l-1.5-4.3L6.2 9.1l4.3-1.5z"/><path d="M18.3 14.3l.8 2.1 2.1.8-2.1.8-.8 2.1-.8-2.1-2.1-.8 2.1-.8z"/>'),
+  back:_svg('<rect x="6" y="3.6" width="12" height="13.3" rx="3.2"/><path d="M6 11h12"/><path d="M8.3 20.4L10 17M15.7 20.4L14 17"/><circle cx="9.4" cy="14" r=".75" fill="currentColor" stroke="none"/><circle cx="14.6" cy="14" r=".75" fill="currentColor" stroke="none"/>'),
+  plan:_svg('<path d="M9 4.3L4 6.2v13.5l5-1.9 6 1.9 5-1.9V4.3l-5 1.9-6-1.9z"/><path d="M9 4.3v13.5M15 6.2v13.5"/>'),
+};
+const ICONS={
+  medal:_svg('<circle cx="12" cy="9.5" r="4.8"/><path d="M8.6 13.6L7 21l5-2.6L17 21l-1.6-7.4"/>'),
+  ellipsis:_svg('<circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/>'),
+  gps:_svg('<path d="M12 2.4v3.1M12 18.5v3.1M2.4 12h3.1M18.5 12h3.1"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>'),
+  arrow:_svg('<path d="M5 12h13M13 6l6 6-6 6"/>',2),
+  navarrow:_svg('<path d="M6 19.5V11a3 3 0 0 1 3-3h7"/><path d="M13 4.6L17.6 8 13 11.4"/>',2),
+  close:_svg('<path d="M6 6l12 12M18 6L6 18"/>',2),
+};
 
-function now(){ return simOffset ? new Date(simOffset) : new Date(); }
-function festClock(d){
-  return { mo:d.getMonth()+1, day:d.getDate(), hm:d.getHours()*60+d.getMinutes(), h:d.getHours(), m:d.getMinutes() };
-}
-function isFestDay(d){ const f=festClock(d); return f.mo===7 && (f.day===24||f.day===25); }
-function isFestDayF(f){ return f.mo===7 && (f.day===24||f.day===25); }
+/* ---------- 時間引擎 ---------- */
+const FEST_YEAR=2026;
+let simOffset=null;
+function now(){ return simOffset?new Date(simOffset):new Date(); }
+function festClock(d){ return {mo:d.getMonth()+1,day:d.getDate(),hm:d.getHours()*60+d.getMinutes(),h:d.getHours(),m:d.getMinutes()}; }
+function isFestDayF(f){ return f.mo===7&&(f.day===24||f.day===25); }
+function isFestDay(d){ return isFestDayF(festClock(d)); }
 function pad(n){return String(n).padStart(2,'0')}
 function hm2str(h){return pad(Math.floor(h/60))+':'+pad(h%60)}
 function toMin(s){const [h,m]=s.split(':').map(Number);return h*60+m}
 
-/* ---------- 圖層定義 ---------- */
-const LAYERS = {
-  matsuri:{name:'祭事',   emoji:'⛩️', color:'#e8552f', on:true},
-  yatai:  {name:'屋台',   emoji:'🍢', color:'#ffb84d', on:false},
-  hanabi: {name:'花火觀賞',emoji:'🎆', color:'#a855f7', on:true},
-  station:{name:'車站',   emoji:'🚉', color:'#3b82f6', on:false},
-  crowd:  {name:'人潮預警',emoji:'🔥', color:'#e5484d', on:false},
-  route:  {name:'我的路線',emoji:'🧭', color:'#22d3ee', on:true},
-};
-
-/* ---------- 祭事層 ---------- */
-const MATSURI = [
-  {id:'tenmangu', name:'大阪天滿宮', lat:34.6956, lng:135.5127, emoji:'⛩️',
-   sched:[
-     {d:24,t:'18:40',x:'催太鼓 宮入'},
-     {d:24,t:'19:00',x:'獅子舞 宮入'},
-     {d:24,t:'~19:30',x:'宵宮結束（散場）'},
-     {d:25,t:'14:00',x:'本宮祭'},
-     {d:25,t:'15:30',x:'陸渡御 出發'},
-   ], note:'神事主場。7/24 宵宮 18:30–19:45 境內爆滿。'},
-  {id:'okawa-fune', name:'大川 · 船渡御', lat:34.6985, lng:135.5188, emoji:'⛵',
+/* =====================================================================
+   資料層（沿用你手工整理的據點資料）
+   ===================================================================== */
+const MATSURI=[
+  {id:'tenmangu',name:'大阪天滿宮',lat:34.6956,lng:135.5127,emoji:'⛩️',
+   sched:[{d:24,t:'18:40',x:'催太鼓 宮入'},{d:24,t:'19:00',x:'獅子舞 宮入'},{d:24,t:'~19:30',x:'宵宮結束（散場）'},{d:25,t:'14:00',x:'本宮祭'},{d:25,t:'15:30',x:'陸渡御 出發'}],
+   note:'神事主場。7/24 宵宮 18:30–19:45 境內爆滿。',
+   trivia:'天神祭祭祀學問之神菅原道真，起源可追溯至西元 951 年，已有千年歷史，與京都祇園祭、東京神田祭並稱「日本三大祭」。'},
+  {id:'okawa-fune',name:'大川 · 船渡御',lat:34.6985,lng:135.5188,emoji:'⛵',
    sched:[{d:25,t:'18:00–21:00',x:'船渡御（約 100 艘）'}],
-   note:'御鳳輦與供奉船沿大川往返，與花火同時進行。'},
-  {id:'hanabi-zone', name:'花火施放帶', lat:34.6975, lng:135.5205, emoji:'🎆',
+   note:'御鳳輦與供奉船沿大川往返，與花火同時進行。',
+   trivia:'約 100 艘船在大川往返，船上會行「大阪締め」拍手祝賀。這是水都大阪最具代表性的畫面。'},
+  {id:'hanabi-zone',name:'花火施放帶',lat:34.6975,lng:135.5205,emoji:'🎆',
    sched:[{d:25,t:'19:30–20:50',x:'奉納花火 約 3000 發'}],
-   note:'施放帶：櫻之宮公園～川崎公園（造幣局旁）大川一帶。⚠️ 7/24 沒有花火。'},
+   note:'施放帶：櫻之宮公園～川崎公園（造幣局旁）大川一帶。⚠️ 7/24 沒有花火。',
+   trivia:'奉納花火約 3000 發，與船渡御的燈火同時倒映水面，因此天神祭又被稱為「火與水的祭典（火と水の祭典）」。'},
 ];
 
-/* ---------- 屋台層（範圍色塊） ---------- */
-const YATAI = [
-  {id:'y-shoutengai', name:'天滿宮境內＋天神橋筋商店街',
+const YATAI=[
+  {id:'y-shoutengai',name:'天滿宮境內＋天神橋筋商店街',lat:34.6960,lng:135.5118,
    poly:[[34.6916,135.5102],[34.6916,135.5113],[34.6952,135.5119],[34.6962,135.5134],[34.6972,135.5124],[34.7005,135.5114],[34.7005,135.5103]],
-   color:'#ffb84d', level:'密度最高',
-   info:'僅天三以南有屋台（本圖沿天神橋筋商店街一丁目～三丁目＋天滿宮境內示意）。攤位多在 11:00 起～23:00 頃，尖峰 17:00–20:00。'},
-  {id:'y-sakurapark', name:'櫻之宮公園周邊（攤位最多）',
+   color:'#ffb84d',level:'密度最高',
+   info:'僅天三以南有屋台（沿天神橋筋商店街一丁目～三丁目＋天滿宮境內示意）。多在 11:00 起～23:00，尖峰 17:00–20:00。'},
+  {id:'y-sakurapark',name:'櫻之宮公園周邊（攤位最多）',lat:34.7025,lng:135.5210,
    poly:[[34.6995,135.5198],[34.7050,135.5205],[34.7058,135.5222],[34.7000,135.5214]],
-   color:'#e8a33d', level:'全祭最密',
-   info:'緊鄰 JR 桜ノ宮駅與花火施放區，每年攤位最多、也最擠，需早到。就在你的觀賞點(源八橋西岸)旁，可邊吃邊看花火。'},
-  {id:'y-okawa', name:'大川沿岸（桜ノ宮～天滿宮之間）',
+   color:'#e8a33d',level:'全祭最密',
+   info:'緊鄰 JR 桜ノ宮駅與花火施放區，每年攤位最多也最擠，需早到。就在你的觀賞點（源八橋西岸）旁，可邊吃邊看花火。'},
+  {id:'y-okawa',name:'大川沿岸（桜ノ宮～天滿宮之間）',lat:34.6982,lng:135.5193,
    poly:[[34.6970,135.5178],[34.6998,135.5196],[34.6992,135.5208],[34.6966,135.5190]],
-   color:'#d98a2d', level:'沿岸步道',
+   color:'#d98a2d',level:'沿岸步道',
    info:'桜ノ宮駅～大阪天滿宮駅之間的大川沿岸，寬步道上有攤位，相對好走。'},
-  {id:'y-minamitemma', name:'南天滿公園／天滿橋駅周邊',
+  {id:'y-minamitemma',name:'南天滿公園／天滿橋駅周邊',lat:34.6913,lng:135.5160,
    poly:[[34.6905,135.5148],[34.6905,135.5170],[34.6922,135.5172],[34.6922,135.5148]],
-   color:'#d98a2d', level:'規模較小',
+   color:'#d98a2d',level:'規模較小',
    info:'天滿橋駅旁河濱，站直結、好抵達，規模較小、人潮相對緩和。'},
 ];
 
-/* ---------- 花火觀賞層（三級） ---------- */
-const HANABI = [
+const HANABI=[
   {id:'h-temmabashi',name:'天滿橋（付費會場）',lat:34.6892,lng:135.5158,tier:'paid',view:'中～遠景',arrive:'憑票入場',crowd:'有座位'},
   {id:'h-zoheikyoku',name:'造幣局對岸（付費）',lat:34.6952,lng:135.5195,tier:'paid',view:'中景',arrive:'憑票',crowd:'有座位'},
   {id:'h-sempokan',name:'泉布觀東側（付費）',lat:34.6990,lng:135.5185,tier:'paid',view:'頭頂近景',arrive:'憑票',crowd:'有座位'},
@@ -316,14 +387,9 @@ const HANABI = [
   {id:'h-sakurashrine',name:'櫻宮神社',lat:34.7022,lng:135.5214,tier:'hidden',view:'中～近景',arrive:'18:30 前',crowd:'中'},
   {id:'h-fujita',name:'藤田邸跡公園前',lat:34.7002,lng:135.5176,tier:'hidden',view:'中景',arrive:'18:30 前',crowd:'低～中'},
 ];
-const HTIER = {
-  paid:  {name:'付費會場',color:'#a855f7',emoji:'🎫'},
-  free:  {name:'免費近景',color:'#e5484d',emoji:'🔥'},
-  hidden:{name:'穴場',    color:'#2ea043',emoji:'🌿'},
-};
+const HTIER={paid:{name:'付費會場',color:'#a855f7',emoji:'🎫'},free:{name:'免費近景',color:'#ff453a',emoji:'🔥'},hidden:{name:'穴場',color:'#34c759',emoji:'🌿'}};
 
-/* ---------- 車站層 ---------- */
-const STATION = [
+const STATION=[
   {id:'s-minamimori',name:'南森町',lat:34.6950,lng:135.5095,status:'avoid',day:'兩日全避',note:'天滿宮最近站，宵宮/本宮皆爆滿。'},
   {id:'s-sakuranomiya',name:'桜ノ宮',lat:34.7050,lng:135.5153,status:'avoid',day:'散場管制最嚴',note:'花火散場入場管制最嚴，絕不要在此回程。'},
   {id:'s-temmabashi',name:'天滿橋',lat:34.6890,lng:135.5156,status:'warn',day:'7/25 16:00 起管制',note:'京阪／谷町線，本宮傍晚起管制。'},
@@ -333,20 +399,15 @@ const STATION = [
   {id:'s-yodoyabashi',name:'淀屋橋',lat:34.6925,lng:135.5010,status:'ok',day:'回程疏散口',note:'御堂筋線／京阪，回程疏散口。'},
   {id:'s-kyobashi',name:'京橋',lat:34.6970,lng:135.5340,status:'best',day:'大站疏散力強',note:'JR／京阪／地下鐵大站，散場最推薦回程口。'},
 ];
-const SSTAT={avoid:{c:'#e5484d',t:'全力避開'},warn:{c:'#d9a520',t:'管制/擁擠'},ok:{c:'#3b82f6',t:'疏散口'},best:{c:'#2ea043',t:'推薦回程'}};
+const SSTAT={avoid:{c:'#ff453a',t:'全力避開'},warn:{c:'#ffcc33',t:'管制/擁擠'},ok:{c:'#0a84ff',t:'疏散口'},best:{c:'#34c759',t:'推薦回程'}};
 
-/* ---------- 人潮預警層（規則式，依時刻變色） ---------- */
-const CROWD = [
+const CROWD=[
   {id:'c-shoutengai',name:'天神橋筋商店街',lat:34.6975,lng:135.5108,r:520,
-   win:[{d:24,from:'17:00',to:'21:00',lv:'red',note:'單向通行管制'},
-        {d:25,from:'17:00',to:'20:00',lv:'red',note:'單向通行'},
-        {d:24,from:'15:00',to:'17:00',lv:'yellow'},{d:25,from:'12:00',to:'17:00',lv:'yellow'}]},
+   win:[{d:24,from:'17:00',to:'21:00',lv:'red',note:'單向通行管制'},{d:25,from:'17:00',to:'20:00',lv:'red',note:'單向通行'},{d:24,from:'15:00',to:'17:00',lv:'yellow'},{d:25,from:'12:00',to:'17:00',lv:'yellow'}]},
   {id:'c-keidai',name:'天滿宮境內',lat:34.6956,lng:135.5127,r:160,
-   win:[{d:24,from:'18:30',to:'19:45',lv:'red',note:'催太鼓/獅子舞卡位'},
-        {d:24,from:'17:30',to:'18:30',lv:'yellow'},{d:25,from:'14:00',to:'16:00',lv:'yellow',note:'陸渡御'}]},
+   win:[{d:24,from:'18:30',to:'19:45',lv:'red',note:'催太鼓/獅子舞卡位'},{d:24,from:'17:30',to:'18:30',lv:'yellow'},{d:25,from:'14:00',to:'16:00',lv:'yellow',note:'陸渡御'}]},
   {id:'c-sakurapark',name:'櫻之宮公園核心草皮／銀橋',lat:34.7000,lng:135.5200,r:340,
-   win:[{d:25,from:'17:00',to:'21:00',lv:'red',note:'核心觀覽區'},
-        {d:25,from:'12:00',to:'17:00',lv:'yellow',note:'佔位戰進行中'}]},
+   win:[{d:25,from:'17:00',to:'21:00',lv:'red',note:'核心觀覽區'},{d:25,from:'12:00',to:'17:00',lv:'yellow',note:'佔位戰進行中'}]},
   {id:'c-sakura-st',name:'桜ノ宮駅・天滿橋駅',lat:34.7050,lng:135.5153,r:220,
    win:[{d:25,from:'20:50',to:'22:30',lv:'red',note:'入場管制，最擁擠'}]},
   {id:'c-okawa-all',name:'大川沿岸全域',lat:34.6985,lng:135.5185,r:600,
@@ -354,27 +415,12 @@ const CROWD = [
   {id:'c-taxi',name:'全區叫車困難',lat:34.6975,lng:135.5155,r:900,faint:true,
    win:[{d:25,from:'21:00',to:'22:30',lv:'red',note:'計程車叫不到'}]},
 ];
-const LV={red:{c:'#e5484d',t:'紅',w:'極擁擠'},yellow:{c:'#d9a520',t:'黃',w:'漸擁擠'},green:{c:'#2ea043',t:'綠',w:'順暢'}};
+const LV={red:{c:'#ff453a',t:'紅',w:'極擁擠'},yellow:{c:'#ffcc33',t:'黃',w:'漸擁擠'},green:{c:'#34c759',t:'綠',w:'順暢'}};
+function crowdLevelAt(zone,f){ if(!isFestDayF(f))return'green'; let lv='green'; for(const w of zone.win){ if(w.d!==f.day)continue; if(f.hm>=toMin(w.from)&&f.hm<toMin(w.to)){ if(w.lv==='red')return'red'; if(w.lv==='yellow')lv='yellow'; } } return lv; }
+function activeWindowNote(zone,f){ for(const w of zone.win){ if(w.d===f.day&&f.hm>=toMin(w.from)&&f.hm<toMin(w.to))return w.note||null; } return null; }
 
-function crowdLevelAt(zone,f){
-  if(!isFestDayF(f)) return 'green';
-  let lv='green';
-  for(const w of zone.win){
-    if(w.d!==f.day) continue;
-    if(f.hm>=toMin(w.from) && f.hm<toMin(w.to)){
-      if(w.lv==='red') return 'red';
-      if(w.lv==='yellow') lv='yellow';
-    }
-  }
-  return lv;
-}
-function activeWindowNote(zone,f){
-  for(const w of zone.win){ if(w.d===f.day && f.hm>=toMin(w.from)&&f.hm<toMin(w.to)) return w.note||null; }
-  return null;
-}
-
-/* ---------- 我的路線層 ---------- */
-const ROUTE = [
+/* 個人行程（沿用） */
+const ROUTE=[
   {id:'r1',d:24,t:'16:30',lat:34.6740,lng:135.5065,title:'長堀橋 → 堺筋線 → 南森町',desc:'出發。搭堺筋線北上。',type:'move'},
   {id:'r2',d:24,t:'17:00',lat:34.6935,lng:135.5112,title:'天神橋筋商店街 屋台晚餐',desc:'17:00–18:10。尖峰前先吃飽。',type:'yatai'},
   {id:'r3',d:24,t:'18:20',lat:34.6956,lng:135.5127,title:'前進天滿宮境內卡位',desc:'18:20 進場，境內即將爆滿。',type:'matsuri'},
@@ -385,20 +431,20 @@ const ROUTE = [
   {id:'r8',d:25,t:'17:30',lat:34.7030,lng:135.5188,title:'源八橋西岸 卡位',desc:'帶野餐墊；一人顧位、一人去東岸屋台買晚餐。',type:'hanabi'},
   {id:'r9',d:25,t:'19:30',lat:34.7030,lng:135.5188,title:'🎆 花火近景（源八橋西岸＝我的觀賞點）',desc:'19:30–20:50 頭頂近景。這裡就是你看煙火的位置。',type:'hanabi'},
   {id:'r10',d:25,t:'20:50',lat:34.7030,lng:135.5188,title:'原地等待人潮散去',desc:'20:50–21:10 千萬別衝。',type:'wait'},
-  {id:'r11',d:25,t:'21:10',lat:34.6970,lng:135.5340,title:'沿東岸南行步行至京橋',desc:'15–20 分，絕不進桜ノ宮駅。京橋→長堀鶴見綠地線『一班車直達』心齋橋／長堀橋（免轉車，中間經長堀橋）。這段步行是為了換掉桜ノ宮駅的管制人龍。',type:'move'},
+  {id:'r11',d:25,t:'21:10',lat:34.6970,lng:135.5340,title:'沿東岸南行步行至京橋',desc:'15–20 分，絕不進桜ノ宮駅。京橋直達心齋橋／長堀橋。',type:'move'},
 ];
 
-/* ---------- 成就 ---------- */
-const ACHV = [
+const ACHV=[
   {id:'yomiya',emoji:'🏮',name:'宵宮見習',desc:'完成 7/24 宵宮行程',need:['r5']},
-  {id:'taiko', emoji:'🥁',name:'催太鼓目擊者',desc:'目擊催太鼓宮入',need:['r4']},
-  {id:'yatai', emoji:'🍢',name:'屋台獵人',desc:'打卡任一屋台帶',anyPrefix:'yt-',need:['r2']},
+  {id:'taiko',emoji:'🥁',name:'催太鼓目擊者',desc:'目擊催太鼓宮入',need:['r4']},
+  {id:'yatai',emoji:'🍢',name:'屋台獵人',desc:'打卡任一屋台帶',anyPrefix:'yt-',need:['r2']},
   {id:'yukata',emoji:'👘',name:'浴衣勇者',desc:'完成難波浴衣著裝',need:['r6']},
   {id:'hanabi',emoji:'🎆',name:'花火滿貫',desc:'打卡花火觀賞點',anyPrefix:'hb-',need:['r9']},
+  {id:'nav',emoji:'🧭',name:'祭典領航員',desc:'使用一次導航抵達',need:[],flag:'navArrived'},
+  {id:'gourmet',emoji:'🍡',name:'屋台美食家',desc:'嚐遍 6 樣祭典小吃',need:[],flag:'gourmetDone'},
 ];
 
-/* ---------- 出門提醒 ---------- */
-const REMIND_LIST = [
+const REMIND_LIST=[
   {id:'cash',t:'現金（多數屋台只收現金）'},
   {id:'fan',t:'扇子／涼感'},
   {id:'powerbank',t:'行動電源'},
@@ -407,305 +453,385 @@ const REMIND_LIST = [
   {id:'valuables',t:'貴重物留住處'},
 ];
 
-/* ============================================================
-   狀態儲存 (localStorage)
-   ============================================================ */
-const LS_KEY='tenjin2026';
-let store = loadStore();
-function loadStore(){
-  try{ const s=JSON.parse(localStorage.getItem(LS_KEY)); return s||{checkins:{},reminds:{},achv:{}}; }
-  catch(e){ return {checkins:{},reminds:{},achv:{}}; }
+/* 天神祭 豆知識（可翻頁的冷知識卡） */
+const TRIVIA=[
+  '天神祭與京都祇園祭、東京神田祭並稱「日本三大祭」。',
+  '祭典祈求無病息災與商業繁盛，已延續超過 1000 年。',
+  '「陸渡御」隊伍約 3000 人，抬神轎、催太鼓、獅子舞遊行至大川。',
+  '「催太鼓」由紅帽子的「願人」在劇烈搖晃中擊鼓，象徵驅邪。',
+  '花火與船渡御同時進行，火光倒映水面 —「火與水的祭典」由此而來。',
+  '屋台美食大多只收現金，記得多帶零錢！',
+  '菅原道真是日本人考試前必拜的「學問之神」，天滿宮就是祀奉他的神社。',
+];
+
+/* 屋台美食制覇 清單 */
+const GOURMET=[
+  {id:'takoyaki',emoji:'🐙',name:'章魚燒（たこ焼き）'},
+  {id:'karaage',emoji:'🍗',name:'炸雞（唐揚げ）'},
+  {id:'yakisoba',emoji:'🍜',name:'炒麵（焼きそば）'},
+  {id:'kakigori',emoji:'🍧',name:'刨冰（かき氷）'},
+  {id:'ringoame',emoji:'🍎',name:'蘋果糖（りんご飴）'},
+  {id:'wataame',emoji:'🍬',name:'棉花糖（綿菓子）'},
+];
+
+/* =====================================================================
+   祭典導航圖（waypoint graph）— 推薦步行路線（示意，已避開管制站）
+   ===================================================================== */
+const NODES={
+  tenmangu:{name:'大阪天滿宮',lat:34.6956,lng:135.5127},
+  shotenS:{name:'天神橋筋商店街(南)',lat:34.6935,lng:135.5112},
+  shotenN:{name:'天神橋筋商店街(北)',lat:34.6998,lng:135.5116},
+  minamimori:{name:'南森町站',lat:34.6950,lng:135.5095},
+  temmaSt:{name:'天滿站',lat:34.7055,lng:135.5090},
+  okawaW:{name:'大川西岸',lat:34.6985,lng:135.5175},
+  oap:{name:'OAP／泉布觀',lat:34.6982,lng:135.5158},
+  ginbashi:{name:'銀橋(桜宮橋)',lat:34.6976,lng:135.5206},
+  genpachi:{name:'源八橋西岸',lat:34.7030,lng:135.5188},
+  sakuraPark:{name:'櫻之宮公園(東岸)',lat:34.7005,lng:135.5205},
+  sakuraSt:{name:'桜ノ宮站',lat:34.7050,lng:135.5153},
+  temmabashiSt:{name:'天滿橋站',lat:34.6890,lng:135.5156},
+  kitahama:{name:'北浜站',lat:34.6900,lng:135.5085},
+  yodoyabashi:{name:'淀屋橋站',lat:34.6925,lng:135.5010},
+  kyobashi:{name:'京橋站',lat:34.6970,lng:135.5340},
+};
+// [a, b, 分鐘, 說明, [中間點...]]
+const EDGE_GEOM={
+  "tenmangu|shotenS":[[34.6956,135.512655],[34.695581,135.512655],[34.695544,135.512655],[34.695503,135.512637],[34.695526,135.511875],[34.695527,135.511812],[34.695165,135.511831],[34.695156,135.511765],[34.695149,135.511203],[34.695126,135.511204],[34.694894,135.511208],[34.694819,135.511208],[34.694784,135.511208],[34.694754,135.511208],[34.694696,135.51121],[34.694446,135.511215],[34.694417,135.511228],[34.694372,135.511256],[34.694365,135.51126],[34.694323,135.511283],[34.694305,135.511288],[34.694299,135.511279],[34.694181,135.511101],[34.693988,135.511185],[34.693978,135.511178],[34.693983,135.511167],[34.694011,135.511113],[34.694015,135.511106],[34.694022,135.511112],[34.694028,135.511116],[34.694025,135.511122],[34.694003,135.511165],[34.693997,135.511171],[34.693991,135.511174],[34.693985,135.511175],[34.693977,135.511174],[34.693958,135.511163],[34.69396,135.511194],[34.693933,135.511242],[34.693631,135.511224],[34.693631,135.511224]],
+  "tenmangu|shotenN":[[34.6956,135.512655],[34.695641,135.512655],[34.695808,135.512652],[34.695795,135.512472],[34.696164,135.512438],[34.696217,135.512459],[34.696287,135.512459],[34.696426,135.512452],[34.696441,135.51243],[34.696582,135.512429],[34.696638,135.512424],[34.696615,135.512384],[34.69661,135.512181],[34.69664,135.512008],[34.696641,135.511892],[34.696637,135.511763],[34.69727,135.51173],[34.697305,135.511728],[34.697328,135.511727],[34.697408,135.511723],[34.697559,135.511714],[34.697641,135.511712],[34.697668,135.511712],[34.698574,135.511669],[34.698846,135.511659],[34.699686,135.511619],[34.6998,135.511614]],
+  "shotenS|minamimori":[[34.693631,135.511224],[34.693631,135.511224],[34.693933,135.511242],[34.69396,135.511194],[34.693958,135.511163],[34.693986,135.511103],[34.69399,135.511025],[34.694015,135.510388],[34.694028,135.51035],[34.694028,135.51026],[34.694039,135.509656],[34.694106,135.509655],[34.694204,135.509649],[34.694426,135.509663],[34.694771,135.509687],[34.694817,135.509688],[34.694847,135.509689],[34.694874,135.50969],[34.694937,135.509692],[34.694953,135.509625],[34.694983,135.509494]],
+  "shotenN|temmaSt":[[34.6998,135.511614],[34.69992,135.511609],[34.700599,135.511581],[34.701187,135.511553],[34.701704,135.511528],[34.702551,135.5115],[34.702574,135.511499],[34.702615,135.511496],[34.702662,135.511494],[34.702673,135.511493],[34.702739,135.51149],[34.702749,135.51149],[34.702846,135.511485],[34.70295,135.511481],[34.702965,135.51148],[34.703079,135.511475],[34.703472,135.511461],[34.70419,135.511431],[34.704697,135.51141],[34.705343,135.51138],[34.705341,135.510971],[34.705366,135.510972],[34.705375,135.510972],[34.705383,135.510964],[34.705397,135.510965],[34.705397,135.51094],[34.705397,135.510895],[34.705397,135.510804],[34.705397,135.510761],[34.705397,135.510706],[34.70551,135.510694],[34.705619,135.510694],[34.70572,135.510517],[34.705727,135.510494],[34.705732,135.510468],[34.705731,135.510242],[34.705735,135.51023],[34.705737,135.509785],[34.705726,135.509692],[34.705713,135.509607],[34.705668,135.509559],[34.705657,135.509497],[34.705593,135.509285],[34.70558,135.50926],[34.705566,135.509246],[34.705495,135.50919],[34.705485,135.509175],[34.705482,135.509162],[34.705477,135.509053],[34.705472,135.509028],[34.705501,135.509027]],
+  "tenmangu|okawaW":[[34.6956,135.512655],[34.695641,135.512655],[34.695808,135.512652],[34.69584,135.512653],[34.695846,135.51281],[34.695941,135.512811],[34.695941,135.512846],[34.696298,135.512845],[34.696304,135.512912],[34.696435,135.512911],[34.696457,135.512899],[34.696521,135.512898],[34.696654,135.512901],[34.696667,135.512902],[34.696766,135.51291],[34.696775,135.512924],[34.696785,135.512942],[34.696799,135.513004],[34.696749,135.513758],[34.697189,135.513795],[34.697187,135.513821],[34.697181,135.513918],[34.697149,135.514377],[34.697138,135.514444],[34.697136,135.514469],[34.697134,135.514491],[34.697134,135.514583],[34.697095,135.515138],[34.697093,135.515177],[34.69709,135.515213],[34.697017,135.51621],[34.697014,135.516243],[34.697012,135.516296],[34.697022,135.516344],[34.696995,135.516704],[34.696993,135.516743],[34.69699,135.51678],[34.696974,135.517085],[34.697004,135.517087],[34.697045,135.517091],[34.697186,135.517104],[34.697236,135.517108],[34.697267,135.517111],[34.697281,135.517151],[34.697322,135.51717],[34.697758,135.517214],[34.698194,135.517237],[34.69819,135.5173],[34.698187,135.517349],[34.698473,135.517293]],
+  "okawaW|oap":[[34.698473,135.517293],[34.698187,135.517349],[34.69819,135.5173],[34.698194,135.517237],[34.698252,135.516389],[34.698293,135.51581]],
+  "okawaW|ginbashi":[[34.698473,135.517293],[34.698187,135.517349],[34.69815,135.517898],[34.698145,135.517964],[34.698139,135.518044],[34.698133,135.518149],[34.698127,135.518226],[34.698108,135.518633],[34.697955,135.51862],[34.697849,135.520011],[34.697837,135.520053],[34.697803,135.52007],[34.697683,135.52006],[34.697651,135.52007],[34.697675,135.520155],[34.69759,135.520193],[34.697536,135.520216],[34.697481,135.520238],[34.697442,135.520254],[34.697393,135.520277],[34.697492,135.520643]],
+  "ginbashi|sakuraPark":[[34.697492,135.520643],[34.697549,135.520854],[34.697572,135.521087],[34.697578,135.521264],[34.697555,135.521698],[34.697644,135.521708],[34.69771,135.521716],[34.697811,135.521728],[34.697878,135.521736],[34.697879,135.521648],[34.698001,135.521675],[34.698032,135.52179],[34.698102,135.521765],[34.698118,135.521742],[34.698141,135.52173],[34.698168,135.521733],[34.698259,135.521729],[34.698434,135.521731],[34.698645,135.521644],[34.698674,135.521631],[34.698713,135.521609],[34.69871,135.521853],[34.698871,135.521765],[34.698993,135.521696],[34.699088,135.521644],[34.699198,135.521576],[34.699461,135.521422],[34.699567,135.521362],[34.699665,135.521301],[34.699856,135.52115],[34.699922,135.521083],[34.699999,135.521003],[34.70011,135.520894],[34.700245,135.520777],[34.700407,135.520663],[34.700516,135.52057],[34.700503,135.520551],[34.700483,135.520514]],
+  "ginbashi|genpachi":[[34.697492,135.520643],[34.697549,135.520854],[34.697572,135.521087],[34.697578,135.521264],[34.697555,135.521698],[34.697644,135.521708],[34.69771,135.521716],[34.697811,135.521728],[34.697878,135.521736],[34.697879,135.521648],[34.698001,135.521675],[34.698032,135.52179],[34.698102,135.521765],[34.698118,135.521742],[34.698141,135.52173],[34.698168,135.521733],[34.698259,135.521729],[34.698434,135.521731],[34.698645,135.521644],[34.698674,135.521631],[34.698713,135.521609],[34.698715,135.521379],[34.698857,135.52138],[34.698865,135.521323],[34.69889,135.521275],[34.698913,135.521246],[34.698942,135.521222],[34.698972,135.521201],[34.699009,135.521183],[34.699019,135.521176],[34.699068,135.521178],[34.69907,135.521111],[34.699078,135.521113],[34.699078,135.521064],[34.699106,135.521065],[34.699147,135.521053],[34.69927,135.52106],[34.699289,135.521042],[34.699315,135.521043],[34.699334,135.521028],[34.699344,135.521014],[34.699353,135.520998],[34.699354,135.520966],[34.699387,135.520968],[34.699453,135.520967],[34.699533,135.520957],[34.699566,135.520952],[34.699635,135.520936],[34.699676,135.520922],[34.699752,135.520895],[34.699829,135.520856],[34.699891,135.52082],[34.699947,135.520785],[34.699982,135.520758],[34.700018,135.520731],[34.700103,135.520655],[34.70016,135.520591],[34.700199,135.520548],[34.70024,135.52049],[34.700281,135.520427],[34.700314,135.520382],[34.700408,135.520381],[34.700542,135.520371],[34.700563,135.520371],[34.700576,135.520355],[34.700611,135.520342],[34.700642,135.520323],[34.701392,135.51964],[34.70154,135.519395],[34.701684,135.519228],[34.701824,135.519069],[34.70189,135.519005],[34.702003,135.518905],[34.702731,135.518433],[34.702776,135.518404],[34.702701,135.518207],[34.702739,135.518188],[34.702822,135.518397],[34.702986,135.518808]],
+  "genpachi|sakuraPark":[[34.702986,135.518808],[34.702822,135.518397],[34.702739,135.518188],[34.702701,135.518207],[34.702776,135.518404],[34.702731,135.518433],[34.702003,135.518905],[34.70189,135.519005],[34.701824,135.519069],[34.701684,135.519228],[34.70154,135.519395],[34.701392,135.51964],[34.700642,135.520323],[34.700611,135.520342],[34.700576,135.520355],[34.700563,135.520371],[34.700568,135.520395],[34.700544,135.520394],[34.700525,135.520409],[34.700551,135.520421],[34.700545,135.520427],[34.700467,135.520485],[34.700483,135.520514]],
+  "genpachi|sakuraSt":[[34.702986,135.518808],[34.702822,135.518397],[34.702739,135.518188],[34.702701,135.518207],[34.702576,135.517881],[34.702585,135.517876],[34.702611,135.517863],[34.702639,135.517848],[34.70265,135.517842],[34.702646,135.517829],[34.702647,135.517816],[34.702651,135.517802],[34.702662,135.51779],[34.702679,135.517782],[34.702862,135.517698],[34.70345,135.517428],[34.703434,135.517348],[34.703414,135.51726],[34.703397,135.517183],[34.703428,135.517166],[34.703459,135.517145],[34.703504,135.517131],[34.703878,135.516939],[34.704928,135.516419],[34.704953,135.516389],[34.704989,135.516372],[34.704962,135.516289],[34.704962,135.51627],[34.704962,135.516252],[34.704973,135.5153]],
+  "sakuraPark|kyobashi":[[34.700483,135.520514],[34.700503,135.520551],[34.700516,135.52057],[34.700407,135.520663],[34.700245,135.520777],[34.70011,135.520894],[34.699999,135.521003],[34.699922,135.521083],[34.699856,135.52115],[34.699665,135.521301],[34.699567,135.521362],[34.699461,135.521422],[34.699198,135.521576],[34.699088,135.521644],[34.698993,135.521696],[34.698871,135.521765],[34.69871,135.521853],[34.698713,135.521609],[34.698674,135.521631],[34.698645,135.521644],[34.698434,135.521731],[34.698259,135.521729],[34.698168,135.521733],[34.698141,135.52173],[34.698118,135.521742],[34.698102,135.521765],[34.698032,135.52179],[34.698001,135.521675],[34.697879,135.521648],[34.697878,135.521736],[34.697873,135.521938],[34.69788,135.52195],[34.69777,135.523574],[34.697676,135.524352],[34.697674,135.524362],[34.697674,135.524372],[34.697677,135.524381],[34.697682,135.524389],[34.697689,135.524392],[34.697688,135.52441],[34.697687,135.524419],[34.697684,135.524469],[34.697682,135.524511],[34.697681,135.52452],[34.697674,135.52452],[34.697668,135.524523],[34.697665,135.524529],[34.697659,135.524619],[34.697633,135.525022],[34.697631,135.525057],[34.697629,135.525098],[34.697607,135.52543],[34.697606,135.525461],[34.697604,135.525495],[34.697588,135.525795],[34.697598,135.525969],[34.697582,135.526078],[34.697579,135.526108],[34.697571,135.526192],[34.697558,135.526311],[34.697552,135.526372],[34.69755,135.526391],[34.69752,135.526403],[34.697489,135.52643],[34.697464,135.526466],[34.697453,135.526496],[34.697448,135.526516],[34.697449,135.526559],[34.697558,135.5271],[34.697566,135.527138],[34.697573,135.527173],[34.697785,135.528231],[34.697788,135.528247],[34.697796,135.528288],[34.697804,135.528326],[34.697808,135.528343],[34.697795,135.528347],[34.697759,135.528358],[34.697694,135.528377],[34.697654,135.528388],[34.697644,135.528391],[34.697873,135.529533],[34.697875,135.529542],[34.697874,135.529551],[34.697871,135.52956],[34.697868,135.529567],[34.697863,135.529573],[34.697858,135.529579],[34.697725,135.529669],[34.697704,135.529683],[34.697661,135.529711],[34.697654,135.529716],[34.697641,135.529725],[34.697209,135.530009],[34.6972,135.530009],[34.697192,135.530008],[34.697189,135.530006],[34.697179,135.530009],[34.697157,135.530018],[34.69714,135.530024],[34.69713,135.530028],[34.697133,135.530039],[34.697133,135.530048],[34.69713,135.530055],[34.69712,135.530069],[34.697093,135.530044],[34.697062,135.530069],[34.69704,135.530087],[34.697001,135.530119],[34.696977,135.530138],[34.696975,135.530147],[34.696972,135.530154],[34.696962,135.530164],[34.696677,135.530352],[34.69665,135.530371],[34.696624,135.530387],[34.696437,135.530511],[34.696404,135.530533],[34.696397,135.530535],[34.696391,135.530536],[34.696386,135.530534],[34.696381,135.530529],[34.696375,135.530532],[34.69634,135.530551],[34.696305,135.530571],[34.696281,135.530584],[34.696292,135.530597],[34.696293,135.530602],[34.696291,135.530607],[34.696093,135.530739],[34.696099,135.530749],[34.696114,135.530781],[34.696084,135.530801],[34.696104,135.530842],[34.696259,135.531184],[34.696287,135.531247],[34.696221,135.531308],[34.696176,135.531354],[34.696161,135.531336],[34.69612,135.531382],[34.696116,135.531386],[34.696131,135.531405],[34.696127,135.531409],[34.696109,135.531429],[34.6963,135.531671],[34.696436,135.531933],[34.696472,135.532024],[34.6965,135.532105],[34.696552,135.532284],[34.696554,135.532292],[34.696588,135.532287],[34.696602,135.532287],[34.696628,135.532287],[34.696654,135.532287],[34.696663,135.532287],[34.696669,135.532692],[34.69668,135.532822],[34.696735,135.533089],[34.696853,135.533591],[34.696949,135.534017]],
+  "okawaW|temmabashiSt":[[34.698473,135.517293],[34.698187,135.517349],[34.69731,135.517269],[34.697268,135.517285],[34.697261,135.517341],[34.697223,135.517337],[34.697168,135.517334],[34.69703,135.517324],[34.696991,135.51732],[34.696952,135.517319],[34.69693,135.517584],[34.696894,135.517718],[34.696843,135.517782],[34.69675,135.517811],[34.696384,135.517781],[34.696001,135.517753],[34.695979,135.517728],[34.695874,135.517715],[34.695858,135.517713],[34.695828,135.517711],[34.695797,135.517708],[34.69575,135.517725],[34.695325,135.517691],[34.695298,135.517676],[34.69525,135.517672],[34.695201,135.517668],[34.695181,135.517674],[34.695081,135.51766],[34.694754,135.517617],[34.694732,135.51759],[34.694672,135.517585],[34.694613,135.51758],[34.694577,135.517585],[34.694228,135.517536],[34.693323,135.517395],[34.693283,135.51739],[34.693233,135.517384],[34.69306,135.517362],[34.692843,135.517338],[34.692655,135.517317],[34.692555,135.517297],[34.692325,135.51727],[34.69225,135.517331],[34.692183,135.517334],[34.692148,135.517332],[34.692134,135.517332],[34.692056,135.517336],[34.692005,135.517342],[34.691996,135.517383],[34.691983,135.517403],[34.691941,135.517407],[34.691931,135.517408],[34.691905,135.517403],[34.690535,135.517341],[34.69049,135.517335],[34.690491,135.517268],[34.690495,135.517148],[34.690483,135.517147],[34.690454,135.517146],[34.690419,135.517146],[34.6904,135.517151],[34.689888,135.517125],[34.689864,135.517084],[34.689862,135.517056],[34.689778,135.517053],[34.689689,135.517049],[34.689686,135.517072],[34.689652,135.517083],[34.689617,135.517108],[34.689592,135.517185],[34.68916,135.517156],[34.689105,135.517152],[34.689146,135.51592],[34.68916,135.51561]],
+  "temmabashiSt|kitahama":[[34.68916,135.51561],[34.689172,135.515325],[34.689194,135.515283],[34.689218,135.515002],[34.689221,135.514859],[34.689222,135.514809],[34.689222,135.514747],[34.689223,135.514725],[34.689833,135.514788],[34.689841,135.51473],[34.689853,135.514654],[34.689877,135.514656],[34.689934,135.514599],[34.689937,135.514575],[34.690067,135.513423],[34.690054,135.513381],[34.690059,135.51333],[34.690063,135.513284],[34.690084,135.513273],[34.690086,135.51323],[34.690124,135.511982],[34.690123,135.511893],[34.690115,135.511858],[34.690082,135.511817],[34.690047,135.511798],[34.690009,135.511798],[34.690011,135.511703],[34.690012,135.511595],[34.69006,135.511595],[34.690099,135.511581],[34.690126,135.511546],[34.690133,135.511508],[34.690133,135.511419],[34.690141,135.51073],[34.690148,135.510332],[34.690148,135.510207],[34.690125,135.510206],[34.690127,135.510192],[34.690153,135.510193],[34.69016,135.510174],[34.69019,135.510102],[34.690186,135.510093],[34.690187,135.51008],[34.690198,135.510081],[34.690201,135.51004],[34.690219,135.509298],[34.690222,135.509224],[34.690229,135.509201],[34.69023,135.509161],[34.690185,135.509114],[34.690223,135.508671],[34.689985,135.50863]],
+  "kitahama|yodoyabashi":[[34.689985,135.50863],[34.690223,135.508671],[34.690241,135.508547],[34.690281,135.508558],[34.690284,135.508517],[34.690361,135.50767],[34.690367,135.507614],[34.690373,135.507558],[34.690405,135.507194],[34.690452,135.50672],[34.69049,135.506719],[34.690856,135.506729],[34.691082,135.506735],[34.691142,135.50674],[34.691209,135.506745],[34.691231,135.506627],[34.691248,135.506533],[34.691267,135.506534],[34.691605,135.506543],[34.691677,135.506466],[34.691778,135.506359],[34.691831,135.506023],[34.691876,135.505744],[34.691886,135.505677],[34.691954,135.505129],[34.691973,135.504772],[34.691975,135.504742],[34.691977,135.504692],[34.69198,135.504643],[34.691982,135.504577],[34.692023,135.503852],[34.692024,135.503779],[34.692027,135.503724],[34.692031,135.503661],[34.692054,135.503579],[34.692071,135.503468],[34.692181,135.502729],[34.69233,135.501738],[34.692362,135.501705],[34.692432,135.501329],[34.692394,135.501231],[34.692386,135.501213],[34.692339,135.501162],[34.692339,135.50114],[34.69234,135.501106],[34.692494,135.500988]],
+  "temmabashiSt|kyobashi":[[34.68916,135.51561],[34.689146,135.51592],[34.689105,135.517152],[34.68916,135.517156],[34.689592,135.517185],[34.689588,135.517268],[34.689576,135.517513],[34.689572,135.517591],[34.689597,135.517605],[34.689623,135.517663],[34.689681,135.517666],[34.689765,135.517671],[34.689822,135.517675],[34.689843,135.517753],[34.68984,135.517869],[34.689838,135.518006],[34.689851,135.518156],[34.689905,135.518337],[34.69004,135.518636],[34.690069,135.51871],[34.690104,135.518795],[34.690148,135.518895],[34.690617,135.519978],[34.690666,135.520093],[34.690749,135.52028],[34.690773,135.520329],[34.690812,135.520484],[34.69097,135.520859],[34.690992,135.520934],[34.691005,135.520965],[34.691415,135.521908],[34.691444,135.521918],[34.691504,135.522055],[34.691525,135.522102],[34.691529,135.522106],[34.691535,135.522109],[34.691542,135.522109],[34.69155,135.522121],[34.691563,135.522141],[34.691581,135.522169],[34.69159,135.522183],[34.691587,135.522187],[34.691586,135.522193],[34.691586,135.522199],[34.691642,135.522332],[34.692024,135.523243],[34.692039,135.523278],[34.692054,135.523314],[34.692501,135.524379],[34.692503,135.524383],[34.692506,135.524387],[34.69251,135.524389],[34.692514,135.52439],[34.692521,135.524406],[34.692539,135.524446],[34.692556,135.524484],[34.692563,135.5245],[34.692561,135.524505],[34.69256,135.524511],[34.69256,135.524517],[34.692562,135.524523],[34.692869,135.525255],[34.692883,135.525288],[34.692898,135.525323],[34.693346,135.52639],[34.693358,135.526419],[34.693372,135.526452],[34.693586,135.526961],[34.693604,135.526983],[34.69363,135.527003],[34.693651,135.527013],[34.693669,135.52702],[34.693682,135.527055],[34.693719,135.527159],[34.693757,135.527266],[34.693763,135.527285],[34.693751,135.527306],[34.693742,135.527334],[34.69374,135.527368],[34.693744,135.527378],[34.693904,135.527761],[34.693913,135.527762],[34.693919,135.527774],[34.693938,135.527822],[34.693957,135.527866],[34.69396,135.527875],[34.693946,135.527874],[34.693948,135.528004],[34.693948,135.528042],[34.693952,135.528054],[34.693959,135.528062],[34.694055,135.528109],[34.694086,135.528132],[34.694113,135.528164],[34.69414,135.528212],[34.694205,135.528392],[34.694378,135.528873],[34.694452,135.52904],[34.694521,135.52918],[34.69461,135.529335],[34.694683,135.52945],[34.694859,135.52971],[34.695166,135.530157],[34.6953,135.530355],[34.695435,135.53054],[34.695804,135.531034],[34.696109,135.531429],[34.6963,135.531671],[34.696436,135.531933],[34.696472,135.532024],[34.6965,135.532105],[34.696552,135.532284],[34.696554,135.532292],[34.696588,135.532287],[34.696602,135.532287],[34.696628,135.532287],[34.696654,135.532287],[34.696663,135.532287],[34.696669,135.532692],[34.69668,135.532822],[34.696735,135.533089],[34.696853,135.533591],[34.696949,135.534017]],
+};
+const EDGES=[
+  ['tenmangu','shotenS',5,'沿天神橋筋商店街（17:00後單向管制）',[[34.6948,135.5118]]],
+  ['tenmangu','shotenN',4,'商店街往北，屋台密集',[[34.6976,135.5120]]],
+  ['shotenS','minamimori',3,'⚠️南森町站兩日全避，僅路過',[[34.6944,135.5102]]],
+  ['shotenN','temmaSt',5,'往環狀線天滿站',[[34.7030,135.5100]]],
+  ['tenmangu','okawaW',7,'往大川方向',[[34.6968,135.5150]]],
+  ['okawaW','oap',3,'河濱步道',[]],
+  ['okawaW','ginbashi',4,'大川西岸步道',[[34.6980,135.5192]]],
+  ['ginbashi','sakuraPark',3,'過銀橋到東岸',[[34.6990,135.5206]]],
+  ['ginbashi','genpachi',5,'西岸往北到源八橋',[[34.7002,135.5197]]],
+  ['genpachi','sakuraPark',4,'過源八橋到東岸',[[34.7020,135.5197]]],
+  ['genpachi','sakuraSt',4,'⚠️桜ノ宮站散場管制最嚴，勿在此回程',[]],
+  ['sakuraPark','kyobashi',18,'★沿大川東岸南行往京橋（散場推薦動線）',[[34.6982,135.5245],[34.6974,135.5292]]],
+  ['okawaW','temmabashiSt',6,'往天滿橋站',[[34.6942,135.5166]]],
+  ['temmabashiSt','kitahama',5,'往南疏散到北浜',[[34.6892,135.5120]]],
+  ['kitahama','yodoyabashi',6,'沿北浜往淀屋橋',[[34.6910,135.5045]]],
+  ['temmabashiSt','kyobashi',20,'沿南岸往京橋',[[34.6930,135.5250]]],
+];
+// 建鄰接表
+const ADJ={};
+Object.keys(NODES).forEach(k=>ADJ[k]=[]);
+EDGES.forEach((e,i)=>{ ADJ[e[0]].push({to:e[1],ei:i,rev:false}); ADJ[e[1]].push({to:e[0],ei:i,rev:true}); });
+
+function distM(a,b){ const R=6371000,toR=x=>x*Math.PI/180; const dLat=toR(b.lat-a.lat),dLng=toR(b.lng-a.lng); const s=Math.sin(dLat/2)**2+Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(s)); }
+function snapNode(p){ let best=null,bd=1e9; Object.keys(NODES).forEach(k=>{ const d=distM(p,NODES[k]); if(d<bd){bd=d;best=k;} }); return best; }
+function dijkstra(src,dst){
+  const dist={},prev={}; Object.keys(NODES).forEach(k=>dist[k]=1e9); dist[src]=0;
+  const pq=new Set(Object.keys(NODES));
+  while(pq.size){
+    let u=null,ud=1e9; pq.forEach(k=>{ if(dist[k]<ud){ud=dist[k];u=k;} });
+    if(u===null)break; pq.delete(u); if(u===dst)break;
+    ADJ[u].forEach(a=>{ const w=EDGES[a.ei][2]; if(dist[u]+w<dist[a.to]){ dist[a.to]=dist[u]+w; prev[a.to]={node:u,ei:a.ei}; } });
+  }
+  if(dist[dst]>=1e9)return null;
+  const path=[]; let cur=dst; while(cur!==src){ const p=prev[cur]; if(!p)return null; path.unshift({from:p.node,to:cur,ei:p.ei}); cur=p.node; }
+  return path; // 陣列 of edges（含方向）
 }
+function edgePolyline(seg){
+  const e=EDGES[seg.ei];
+  const g=EDGE_GEOM[e[0]+'|'+e[1]];            // 實道路幾何（建置時以徒歩路徑API取得）
+  if(g&&g.length){ return (seg.from===e[0])?g.slice():g.slice().reverse(); }
+  // fallback：直線＋估計中間點
+  const via=e[4]||[]; const a=NODES[seg.from],b=NODES[seg.to];
+  const mids=(seg.from===e[0])?via:[...via].reverse();
+  return [[a.lat,a.lng],...mids.map(m=>[m[0],m[1]]),[b.lat,b.lng]];
+}
+
+/* =====================================================================
+   狀態儲存
+   ===================================================================== */
+const LS_KEY='tenjin2026v2';
+let store=loadStore();
+function loadStore(){ try{ const s=JSON.parse(localStorage.getItem(LS_KEY)); return s||{checkins:{},reminds:{},achv:{},flags:{},gourmet:{}}; }catch(e){ return {checkins:{},reminds:{},achv:{},flags:{},gourmet:{}}; } }
 function saveStore(){ try{ localStorage.setItem(LS_KEY,JSON.stringify(store)); }catch(e){} }
 function isChecked(id){ return !!store.checkins[id]; }
-function setCheck(id,v){ if(v) store.checkins[id]=Date.now(); else delete store.checkins[id]; saveStore(); }
+function setCheck(id,v){ if(v)store.checkins[id]=Date.now(); else delete store.checkins[id]; saveStore(); }
 function anyCheckedPrefix(pre){ return Object.keys(store.checkins).some(k=>k.indexOf(pre)===0); }
 
-/* ============================================================
-   地圖初始化
-   ============================================================ */
-let map, tileLayer, fallbackMode=false, gpsMarker=null, gpsLatLng=null, gpsWatch=null;
-let routeDay=24, gpsCentered=false;
+/* =====================================================================
+   地圖
+   ===================================================================== */
+let map,tileLayer,fallbackMode=false,gpsMarker=null,gpsLatLng=null,gpsWatch=null,gpsCentered=false;
+let routeDay=24;
 const FEST_CENTER={lat:34.6985,lng:135.5175};
-const mLayers={};
+const mLayers={};             // 情報圖層
+let navLayer=null;            // 導航路線圖層
+let navSession=null;          // {toName,toLat,toLng,checkinId,totalMin}
+let manualOrigin='tenmangu';  // 未定位時的起點
+
+const LAYER_KEYS=['matsuri','yatai','hanabi','station','crowd','route'];
 
 function initMap(){
   try{
-    map = L.map('map',{zoomControl:true,attributionControl:true,tap:true}).setView([34.6975,135.5150],14);
-    tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
-      maxZoom:20, minZoom:11, subdomains:'abcd',
-      attribution:'© OpenStreetMap © CARTO', crossOrigin:true
-    });
-    let tileErrors=0, tileOk=false;
-    tileLayer.on('tileerror',()=>{ tileErrors++; if(!tileOk && tileErrors>=4) enterFallback(); });
+    map=L.map('map',{zoomControl:false,attributionControl:true,tap:true}).setView([34.6985,135.5165],14);
+    tileLayer=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:20,minZoom:11,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO',crossOrigin:true});
+    let tileErrors=0,tileOk=false;
+    tileLayer.on('tileerror',()=>{ tileErrors++; if(!tileOk&&tileErrors>=4)enterFallback(); });
     tileLayer.on('tileload',()=>{ tileOk=true; });
     tileLayer.addTo(map);
-    setTimeout(()=>{ if(!tileOk) enterFallback(); },6000);
-
-    Object.keys(LAYERS).forEach(k=> mLayers[k]=L.layerGroup().addTo(map));
-    buildStaticMarkers();
-    rebuildCrowd();
-    rebuildRoute();
-    applyLayerVisibility();
+    setTimeout(()=>{ if(!tileOk)enterFallback(); },6000);
+    LAYER_KEYS.forEach(k=>mLayers[k]=L.layerGroup().addTo(map));
+    navLayer=L.layerGroup().addTo(map);
+    buildStaticMarkers(); rebuildCrowd(); rebuildRoute();
+    applyTab();
   }catch(e){ enterFallback(); }
 }
+function enterFallback(){ if(fallbackMode)return; fallbackMode=true; document.getElementById('fallback').classList.remove('hidden'); renderFallback(); }
+function exitFallback(){ fallbackMode=false; document.getElementById('fallback').classList.add('hidden'); if(map)setTimeout(()=>map.invalidateSize(),120); }
 
-function enterFallback(){
-  if(fallbackMode) return;
-  fallbackMode=true;
-  document.getElementById('fallback').classList.remove('hidden');
-  renderFallback();
-}
-function exitFallback(){
-  fallbackMode=false;
-  document.getElementById('fallback').classList.add('hidden');
-  if(map){ setTimeout(()=>map.invalidateSize(),120); }
-}
+function divPin(color,emoji,size){ size=size||26; return L.divIcon({className:'',html:`<div class="pin" style="background:${color};width:${size}px;height:${size}px"><span>${emoji}</span></div>`,iconSize:[size,size],iconAnchor:[size/2,size],popupAnchor:[0,-size]}); }
+function labelIcon(txt,bg){ return L.divIcon({className:'',html:`<div class="zlabel" style="background:${bg||'rgba(30,26,24,.9)'}">${txt}</div>`,iconSize:[10,10]}); }
 
-/* ---------- markers ---------- */
-function divPin(color,emoji){
-  return L.divIcon({className:'',html:`<div class="pin" style="background:${color};width:24px;height:24px"><span>${emoji}</span></div>`,
-    iconSize:[24,24],iconAnchor:[12,24],popupAnchor:[0,-24]});
-}
 function buildStaticMarkers(){
-  MATSURI.forEach(p=>{
-    const mk=L.marker([p.lat,p.lng],{icon:divPin(LAYERS.matsuri.color,p.emoji)});
-    mk.on('click',()=>openMatsuri(p)); mLayers.matsuri.addLayer(mk);
-  });
+  MATSURI.forEach(p=>{ const mk=L.marker([p.lat,p.lng],{icon:divPin(getComputedStyle(document.documentElement).getPropertyValue('--accent')||'#f0512f',p.emoji)}); mk.on('click',()=>openSpot(p,'matsuri')); mLayers.matsuri.addLayer(mk); });
   YATAI.forEach(p=>{
     const poly=L.polygon(p.poly,{color:p.color,fillColor:p.color,fillOpacity:.28,weight:2});
     poly.on('click',()=>openYatai(p)); mLayers.yatai.addLayer(poly);
     const c=poly.getBounds().getCenter();
-    const lbl=L.marker(c,{icon:L.divIcon({className:'',html:`<div style="background:${p.color};color:#111;font-size:10px;font-weight:800;padding:2px 6px;border-radius:10px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.5)">🍢 ${p.level}</div>`,iconSize:[10,10]})});
-    lbl.on('click',()=>openYatai(p)); mLayers.yatai.addLayer(lbl);
+    const lbl=L.marker(c,{icon:labelIcon('🍢 '+p.level,p.color)}); lbl.on('click',()=>openYatai(p)); mLayers.yatai.addLayer(lbl);
   });
-  HANABI.forEach(p=>{
-    const t=HTIER[p.tier];
-    const mk=L.marker([p.lat,p.lng],{icon:divPin(t.color,t.emoji)});
-    mk.on('click',()=>openHanabi(p)); mLayers.hanabi.addLayer(mk);
-  });
-  STATION.forEach(p=>{
-    const s=SSTAT[p.status];
-    const mk=L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',html:`<div class="pin" style="background:${s.c};width:24px;height:24px"><span>🚉</span></div>`,iconSize:[24,24],iconAnchor:[12,24],popupAnchor:[0,-24]})});
-    mk.on('click',()=>openStation(p)); mLayers.station.addLayer(mk);
-  });
+  HANABI.forEach(p=>{ const t=HTIER[p.tier]; const mk=L.marker([p.lat,p.lng],{icon:divPin(t.color,t.emoji)}); mk.on('click',()=>openHanabi(p)); mLayers.hanabi.addLayer(mk); });
+  STATION.forEach(p=>{ const s=SSTAT[p.status]; const mk=L.marker([p.lat,p.lng],{icon:divPin(s.c,'🚉')}); mk.on('click',()=>openStation(p)); mLayers.station.addLayer(mk); });
 }
 function rebuildCrowd(){
-  if(!mLayers.crowd) return;
-  mLayers.crowd.clearLayers();
+  if(!mLayers.crowd)return; mLayers.crowd.clearLayers();
   const f=festClock(now());
-  CROWD.forEach(z=>{
-    const lv=crowdLevelAt(z,f), col=LV[lv].c;
-    const circle=L.circle([z.lat,z.lng],{radius:z.r,color:col,fillColor:col,
-      fillOpacity: lv==='green'?.05:(z.faint?.10:.22), weight: lv==='green'?1:2, dashArray:z.faint?'6 6':null});
-    circle.on('click',()=>openCrowd(z));
-    mLayers.crowd.addLayer(circle);
-  });
+  CROWD.forEach(z=>{ const lv=crowdLevelAt(z,f),col=LV[lv].c;
+    const circle=L.circle([z.lat,z.lng],{radius:z.r,color:col,fillColor:col,fillOpacity:lv==='green'?.05:(z.faint?.10:.22),weight:lv==='green'?1:2,dashArray:z.faint?'6 6':null});
+    circle.on('click',()=>openCrowd(z)); mLayers.crowd.addLayer(circle); });
 }
 function rebuildRoute(){
-  if(!mLayers.route) return;
-  mLayers.route.clearLayers();
+  if(!mLayers.route)return; mLayers.route.clearLayers();
   const activeIdx=currentRouteIndex();
-  const shown = ROUTE.filter(r=> routeDay==='both' || r.d===routeDay);
-  // 把「同一地點的連續時段」合併成一個地圖標記（清單仍分開列）
+  const shown=ROUTE.filter(r=>routeDay==='both'||r.d===routeDay);
   const groups=[];
-  shown.forEach(r=>{
-    const last=groups[groups.length-1];
-    if(last && last[0].lat===r.lat && last[0].lng===r.lng) last.push(r);
-    else groups.push([r]);
-  });
+  shown.forEach(r=>{ const last=groups[groups.length-1]; if(last&&last[0].lat===r.lat&&last[0].lng===r.lng)last.push(r); else groups.push([r]); });
   groups.forEach(g=>{
-    const gi=ROUTE.indexOf(g[0]);
-    const nums=g.map(x=>ROUTE.indexOf(x)+1);
-    const label=g.length>1 ? nums[0]+'–'+nums[nums.length-1] : String(gi+1);
+    const gi=ROUTE.indexOf(g[0]); const nums=g.map(x=>ROUTE.indexOf(x)+1);
+    const label=g.length>1?nums[0]+'–'+nums[nums.length-1]:String(gi+1);
     const allDone=g.every(x=>isChecked(x.id));
     const activeHere=g.some(x=>ROUTE.indexOf(x)===activeIdx);
-    const isHanabiSpot=g.some(x=>x.type==='hanabi');
-    let mk;
+    const isHanabiSpot=g.some(x=>x.type==='hanabi'); let mk;
     if(isHanabiSpot){
-      // 你的花火觀賞點：醒目標記
-      mk=L.marker([g[0].lat,g[0].lng],{zIndexOffset:1600,icon:L.divIcon({className:'',html:
-        `<div style="position:relative"><div style="background:#e5484d;border:3px solid #fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 10px rgba(0,0,0,.5)">🎆</div>
-         <div style="position:absolute;top:38px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#e5484d;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:9px;box-shadow:0 1px 4px rgba(0,0,0,.5)">我的觀賞點</div></div>`,
-        iconSize:[36,36],iconAnchor:[18,18]})});
-    }else{
-      let cls='route-dot'; if(activeHere) cls+=' active'; else if(allDone) cls+=' done';
-      mk=L.marker([g[0].lat,g[0].lng],{zIndexOffset:1000,icon:L.divIcon({className:'',html:`<div class="${cls}">${allDone?'✓':label}</div>`,iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-16]})});
-    }
+      mk=L.marker([g[0].lat,g[0].lng],{zIndexOffset:1600,icon:L.divIcon({className:'',html:`<div style="position:relative"><div style="background:#ff453a;border:3px solid #fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 10px rgba(0,0,0,.5)">🎆</div><div style="position:absolute;top:38px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#ff453a;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:9px;box-shadow:0 1px 4px rgba(0,0,0,.5)">我的觀賞點</div></div>`,iconSize:[36,36],iconAnchor:[18,18]})});
+    }else{ let cls='route-dot'; if(activeHere)cls+=' active'; else if(allDone)cls+=' done'; mk=L.marker([g[0].lat,g[0].lng],{zIndexOffset:1000,icon:L.divIcon({className:'',html:`<div class="${cls}">${allDone?'✓':label}</div>`,iconSize:[27,27],iconAnchor:[13,13]})}); }
     mk.on('click',()=>openRouteGroup(g)); mLayers.route.addLayer(mk);
   });
-  const days = routeDay==='both'?[24,25]:[routeDay];
-  days.forEach(day=>{
-    const seg=ROUTE.filter(r=>r.d===day).map(r=>[r.lat,r.lng]);
-    if(seg.length>1) mLayers.route.addLayer(L.polyline(seg,{color:LAYERS.route.color,weight:3,opacity:.6,dashArray:'6 7'}));
-  });
-}
-function openRouteGroup(g){
-  if(g.length===1){ openRoutePoint(g[0],ROUTE.indexOf(g[0])); return; }
-  const body=g.map(r=>{
-    const done=isChecked(r.id);
-    return `<div class="route-item ${done?'done':''}" data-id="${r.id}"><div class="rtime">${r.t}</div>
-      <div class="rmain"><div class="rt">${r.title}</div><div class="rd">${r.desc}</div></div>
-      <div class="rchk"><button class="chkbtn ${done?'done':''}" data-chk="${r.id}">${done?'✓':'打卡'}</button></div></div>`;
-  }).join('');
-  openSheet('🧭 同一地點的行程',
-    `<div class="info-block"><p>這個位置在你的行程裡有 <b>${g.length}</b> 個時段（同一地點、不同時間）：</p></div>${body}`);
-  bindRouteItems();
-}
-function applyLayerVisibility(){
-  if(!map) return;
-  Object.keys(LAYERS).forEach(k=>{
-    if(LAYERS[k].on){ if(!map.hasLayer(mLayers[k])) map.addLayer(mLayers[k]); }
-    else{ if(map.hasLayer(mLayers[k])) map.removeLayer(mLayers[k]); }
-  });
+  const days=routeDay==='both'?[24,25]:[routeDay];
+  days.forEach(day=>{ const seg=ROUTE.filter(r=>r.d===day).map(r=>[r.lat,r.lng]); if(seg.length>1)mLayers.route.addLayer(L.polyline(seg,{color:'#25d0e6',weight:3,opacity:.55,dashArray:'6 7'})); });
 }
 
-/* ============================================================
-   圖層開關 UI
-   ============================================================ */
-function buildLayerChips(){
-  const wrap=document.getElementById('layerScroll'); wrap.innerHTML='';
-  Object.keys(LAYERS).forEach(k=>{
-    const L_=LAYERS[k];
-    const chip=document.createElement('button');
-    chip.className='layer-chip'+(L_.on?'':' off');
-    chip.innerHTML=`<span class="dot" style="background:${L_.color}"></span>${L_.emoji} ${L_.name}`;
-    chip.onclick=()=>{ L_.on=!L_.on; chip.classList.toggle('off',!L_.on); applyLayerVisibility(); if(k==='route') updateRouteDayCtl(); if(fallbackMode) renderFallback(); };
-    wrap.appendChild(chip);
-  });
+/* =====================================================================
+   分頁系統（取代原本 6 個圖層開關 + 3 個 FAB）
+   ===================================================================== */
+const TABS=[
+  {id:'now',   name:'現在', ic:'🧭', layers:['crowd','route','matsuri'], cta:'現在去哪？', act:()=>openRecommend()},
+  {id:'yatai', name:'屋台', ic:'🍢', layers:['yatai'],                  cta:'帶我去最近屋台', act:()=>openYataiList()},
+  {id:'hanabi',name:'花火', ic:'🎆', layers:['hanabi'],                 cta:'哪裡看最好？', act:()=>openHanabiGuide()},
+  {id:'back',  name:'回程', ic:'🚉', layers:['station','crowd'],        cta:'怎麼回家最順？', act:()=>openEscape()},
+  {id:'plan',  name:'行程', ic:'🗺️', layers:['route','matsuri'],        cta:'看我的兩日行程', act:()=>openRouteSheet()},
+];
+let activeTab='now';
+function buildTabbar(){
+  const bar=document.getElementById('tabbar'); bar.innerHTML='';
+  TABS.forEach(t=>{ const el=document.createElement('button'); el.className='tab'+(t.id===activeTab?' on':''); el.dataset.id=t.id;
+    el.innerHTML=`<span class="ic">${TAB_ICONS[t.id]||t.ic}</span>${t.name}`; el.onclick=()=>selectTab(t.id); bar.appendChild(el); });
 }
+function selectTab(id){ activeTab=id; buildTabbar(); applyTab(); }
+function currentTab(){ return TABS.find(t=>t.id===activeTab); }
+function applyTab(){
+  const t=currentTab();
+  LAYER_KEYS.forEach(k=>{ const show=t.layers.includes(k); if(!map)return; if(show){ if(!map.hasLayer(mLayers[k]))map.addLayer(mLayers[k]); } else { if(map.hasLayer(mLayers[k]))map.removeLayer(mLayers[k]); } });
+  document.getElementById('ctaBtn').innerHTML=`<span>${t.cta}</span>${ICONS.arrow}`;
+  if(fallbackMode)renderFallback();
+}
+document.getElementById('ctaBtn').onclick=()=>currentTab().act();
 
-/* ============================================================
-   Bottom Sheet
-   ============================================================ */
-const sheet=document.getElementById('sheet'), mask=document.getElementById('sheetMask');
-function openSheet(title,html){
-  document.getElementById('sheetTitle').innerHTML=title;
-  document.getElementById('sheetBody').innerHTML=html;
-  sheet.classList.add('show'); mask.classList.add('show');
-}
+/* =====================================================================
+   Bottom sheet
+   ===================================================================== */
+const sheet=document.getElementById('sheet'),mask=document.getElementById('sheetMask');
+function openSheet(title,html){ document.getElementById('sheetTitle').innerHTML=title; document.getElementById('sheetBody').innerHTML=html; sheet.classList.add('show'); mask.classList.add('show'); }
 function closeSheet(){ sheet.classList.remove('show'); mask.classList.remove('show'); }
-document.getElementById('sheetClose').onclick=closeSheet;
-mask.onclick=closeSheet;
+document.getElementById('sheetClose').onclick=closeSheet; mask.onclick=closeSheet;
 
-/* ---------- popup 內容 ---------- */
-function schedHtml(list){
-  const f=festClock(now());
-  return list.map(s=>{
-    const isToday = s.d===f.day && f.mo===7;
-    return `<li><b>7/${s.d} ${s.t}</b> ${s.x} ${isToday?'<span class="pill" style="background:var(--accent);color:#fff">今日</span>':''}</li>`;
-  }).join('');
+/* ---------- 附近屋台（讓每個據點都能「有屋台」） ---------- */
+function nearestYatai(lat,lng,n){ return YATAI.map(y=>({y,d:distM({lat,lng},{lat:y.lat,lng:y.lng})})).sort((a,b)=>a.d-b.d).slice(0,n||2); }
+function yataiNearHtml(lat,lng){
+  const list=nearestYatai(lat,lng,2);
+  return `<div class="card"><h4>🍢 附近屋台</h4><ul>${list.map(o=>`<li><b>${o.y.name}</b> <span class="pill" style="background:${o.y.color};color:#111">${o.y.level}</span> · 約 ${fmtM(o.d)}
+     <button class="gobtn" style="margin-left:6px;padding:5px 9px" onclick="navTo(${o.y.lat},${o.y.lng},'${o.y.name.replace(/'/g,'')}','yt-${o.y.id}')">帶我去</button></li>`).join('')}</ul></div>`;
 }
-function openMatsuri(p){
-  openSheet(`⛩️ ${p.name}`,
-   `<div class="info-block"><h4>時刻表</h4><ul>${schedHtml(p.sched)}</ul></div>
-    <div class="info-block"><p>${p.note}</p></div>
-    ${checkinBtnHtml('mk-'+p.id)}`);
-  bindCheckin('mk-'+p.id);
+function fmtM(m){ m=Math.round(m); return m>=1000?(m/1000).toFixed(1)+'km':m+'m'; }
+
+/* ---------- 據點 sheet ---------- */
+function schedHtml(list){ const f=festClock(now()); return list.map(s=>{ const today=s.d===f.day&&f.mo===7; return `<li><b>7/${s.d} ${s.t}</b> ${s.x} ${today?'<span class="pill" style="background:var(--accent)">今日</span>':''}</li>`; }).join(''); }
+function openSpot(p){
+  openSheet(`${p.emoji} ${p.name}`,
+   `<div class="card"><h4>時刻表</h4><ul>${schedHtml(p.sched)}</ul></div>
+    <div class="card"><p>${p.note}</p></div>
+    ${p.trivia?`<div class="card" style="border-color:var(--gold)"><h4>💡 豆知識</h4><p style="color:var(--text)">${p.trivia}</p></div>`:''}
+    ${yataiNearHtml(p.lat,p.lng)}
+    <div class="hero" style="padding:0;border:none;background:none;margin:0">
+      <div class="acts"><button class="bigbtn primary" onclick="navTo(${p.lat},${p.lng},'${p.name}','mk-${p.id}')">🧭 帶我去這裡</button>
+      ${checkinBtnInline('mk-'+p.id)}</div></div>`);
+  bindInlineCheckin('mk-'+p.id);
 }
 function openYatai(p){
   openSheet(`🍢 ${p.name}`,
-   `<div class="info-block"><span class="badge" style="background:${p.color};color:#111">${p.level}</span><p style="margin-top:8px">${p.info}</p>
-      <p style="margin-top:6px;font-size:.72rem;color:var(--muted)">※ 色塊為<b>示意範圍</b>（非精確測繪），實際攤位以現場為準。</p></div>
-    ${checkinBtnHtml('yt-'+p.id)}`);
-  bindCheckin('yt-'+p.id);
+   `<div class="card"><span class="badge" style="background:${p.color};color:#111">${p.level}</span><p style="margin-top:9px">${p.info}</p>
+     <p style="margin-top:6px;font-size:.74rem;color:var(--muted)">※ 色塊為<b>示意範圍</b>（非精確測繪），實際攤位以現場為準。</p></div>
+    <div class="hero" style="padding:0;border:none;background:none;margin:0"><div class="acts">
+      <button class="bigbtn primary" onclick="navTo(${p.lat},${p.lng},'${p.name.replace(/'/g,'')}','yt-${p.id}')">🧭 帶我去這裡</button>
+      ${checkinBtnInline('yt-'+p.id)}</div></div>`);
+  bindInlineCheckin('yt-'+p.id);
 }
 function openHanabi(p){
   const t=HTIER[p.tier];
   openSheet(`${t.emoji} ${p.name}`,
-   `<div class="info-block"><span class="badge" style="background:${t.color};color:#fff">${t.name}</span>
-      <ul style="margin-top:8px">
-        <li><b>視野</b>：${p.view}</li><li><b>需到達</b>：${p.arrive}</li><li><b>擁擠度</b>：${p.crowd}</li>
-      </ul></div>
-    ${checkinBtnHtml('hb-'+p.id)}`);
-  bindCheckin('hb-'+p.id);
+   `<div class="card"><span class="badge" style="background:${t.color}">${t.name}</span>
+     <ul style="margin-top:9px"><li><b>視野</b>：${p.view}</li><li><b>需到達</b>：${p.arrive}</li><li><b>擁擠度</b>：${p.crowd}</li></ul></div>
+    ${yataiNearHtml(p.lat,p.lng)}
+    <div class="hero" style="padding:0;border:none;background:none;margin:0"><div class="acts">
+      <button class="bigbtn primary" onclick="navTo(${p.lat},${p.lng},'${p.name.replace(/'/g,'')}','hb-${p.id}')">🧭 帶我去這裡</button>
+      ${checkinBtnInline('hb-'+p.id)}</div></div>`);
+  bindInlineCheckin('hb-'+p.id);
 }
 function openStation(p){
   const s=SSTAT[p.status];
   openSheet(`🚉 ${p.name}`,
-   `<div class="info-block"><span class="badge" style="background:${s.c};color:#fff">${s.t}</span>
-     <ul style="margin-top:8px"><li><b>當日狀態</b>：${p.day}</li><li>${p.note}</li></ul></div>`);
+   `<div class="card"><span class="badge" style="background:${s.c}">${s.t}</span>
+     <ul style="margin-top:9px"><li><b>當日狀態</b>：${p.day}</li><li>${p.note}</li></ul></div>
+    <div class="hero" style="padding:0;border:none;background:none;margin:0"><div class="acts">
+      <button class="bigbtn primary" onclick="navTo(${p.lat},${p.lng},'${p.name}',null)">🧭 帶我去這站</button></div></div>`);
 }
 function openCrowd(z){
-  const f=festClock(now());
-  const lv=crowdLevelAt(z,f), info=LV[lv], note=activeWindowNote(z,f);
-  const windows=z.win.map(w=>`<li><b>7/${w.d} ${w.from}–${w.to}</b> <span class="pill" style="background:${LV[w.lv].c};color:#fff">${LV[w.lv].t}</span> ${w.note||''}</li>`).join('');
+  const f=festClock(now()); const lv=crowdLevelAt(z,f),info=LV[lv],note=activeWindowNote(z,f);
+  const windows=z.win.map(w=>`<li><b>7/${w.d} ${w.from}–${w.to}</b> <span class="pill" style="background:${LV[w.lv].c}">${LV[w.lv].t}</span> ${w.note||''}</li>`).join('');
   openSheet(`🔥 ${z.name}`,
-   `<div class="info-block"><h4>目前等級 <span class="badge" style="background:${info.c};color:#fff">${info.t}｜${info.w}</span></h4>
-     ${note?`<p style="margin-top:6px;color:var(--accent2)">⚠️ ${note}</p>`:'<p style="margin-top:6px">此時段相對緩和。</p>'}</div>
-    <div class="info-block"><h4>時段規則（規則式預測，非即時）</h4><ul>${windows}</ul></div>`);
+   `<div class="card"><h4>目前等級 <span class="badge" style="background:${info.c}">${info.t}｜${info.w}</span></h4>
+     ${note?`<p style="margin-top:6px;color:var(--gold)">⚠️ ${note}</p>`:'<p style="margin-top:6px">此時段相對緩和。</p>'}</div>
+    <div class="card"><h4>時段規則（規則式預測，非即時）</h4><ul>${windows}</ul></div>`);
+}
+function openRouteGroup(g){
+  if(g.length===1){ openRoutePoint(g[0],ROUTE.indexOf(g[0])); return; }
+  const body=g.map(r=>{ const done=isChecked(r.id); return `<div class="row ${done?'done':''}"><div class="lead">${r.t}</div><div class="body"><div class="t">${r.title}</div><div class="d">${r.desc}</div></div><div class="go"><button class="chkbtn ${done?'done':''}" data-chk="${r.id}">${done?'✓':'打卡'}</button></div></div>`; }).join('');
+  openSheet('🗺️ 同一地點的行程',`<div class="card"><p>這個位置在你的行程裡有 <b>${g.length}</b> 個時段：</p></div>${body}`);
+  bindRouteChk();
 }
 function openRoutePoint(r,i){
-  openSheet(`🧭 ${r.t} · 第 ${i+1} 站`,
-   `<div class="info-block"><span class="badge" style="background:var(--route);color:#04222b">7/${r.d}</span>
-     <p style="margin-top:8px;color:var(--text);font-weight:700">${r.title}</p>
-     <p style="margin-top:4px">${r.desc}</p></div>
-    ${checkinBtnHtml(r.id)}`);
-  bindCheckin(r.id);
+  openSheet(`🗺️ ${r.t} · 第 ${i+1} 站`,
+   `<div class="card"><span class="badge" style="background:var(--route);color:#04222b">7/${r.d}</span>
+     <p style="margin-top:9px;color:var(--text);font-weight:700">${r.title}</p><p style="margin-top:4px">${r.desc}</p></div>
+    ${r.type!=='move'?yataiNearHtml(r.lat,r.lng):''}
+    <div class="hero" style="padding:0;border:none;background:none;margin:0"><div class="acts">
+      <button class="bigbtn primary" onclick="navTo(${r.lat},${r.lng},'${r.title.replace(/'/g,'').slice(0,20)}','${r.id}')">🧭 帶我去這站</button>
+      ${checkinBtnInline(r.id)}</div></div>`);
+  bindInlineCheckin(r.id);
 }
-function checkinBtnHtml(id){
-  const done=isChecked(id);
-  return `<button class="chkbtn ${done?'done':''}" id="ci_${id}" style="width:100%;padding:12px;font-size:.9rem;margin-top:4px">${done?'✓ 已打卡':'📍 打卡'}</button>`;
+function checkinBtnInline(id){ const done=isChecked(id); return `<button class="bigbtn ghost" id="ci_${id}">${done?'✓ 已打卡':'📍 打卡'}</button>`; }
+function bindInlineCheckin(id){ const btn=document.getElementById('ci_'+id); if(!btn)return; btn.onclick=()=>{ const nv=!isChecked(id); setCheck(id,nv); btn.textContent=nv?'✓ 已打卡':'📍 打卡'; if(nv){ toast('✓','已打卡！'); checkAchievements(); } rebuildRoute(); updateAchvBadge(); if(fallbackMode)renderFallback(); }; }
+function bindRouteChk(){ document.querySelectorAll('[data-chk]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.chk; const nv=!isChecked(id); setCheck(id,nv); b.classList.toggle('done',nv); b.textContent=nv?'✓':'打卡'; if(nv){ toast('✓','已打卡'); checkAchievements(); } rebuildRoute(); updateAchvBadge(); if(fallbackMode)renderFallback(); }); }
+
+/* =====================================================================
+   祭典導航
+   ===================================================================== */
+function navTo(lat,lng,name,checkinId){
+  closeSheet();
+  const dst=snapNode({lat,lng});
+  const startNodeId=gpsLatLng?snapNode(gpsLatLng):manualOrigin;
+  const path=dijkstra(startNodeId,dst);
+  // 組合座標與步驟
+  const pts=[]; const steps=[]; let totalMin=0;
+  const startCoord=gpsLatLng?gpsLatLng:NODES[startNodeId];
+  if(gpsLatLng){ pts.push([gpsLatLng.lat,gpsLatLng.lng]); const legM=distM(gpsLatLng,NODES[startNodeId]); totalMin+=Math.max(1,Math.round(legM/75)); steps.push({t:`從你的位置出發，前往 ${NODES[startNodeId].name}`,m:`約 ${fmtM(legM)}`,warn:''}); }
+  else { steps.push({t:`從「${NODES[startNodeId].name}」出發`,m:'（未定位，可在下方改起點或開定位更準）',warn:''}); }
+  if(path&&path.length){
+    path.forEach(seg=>{ const e=EDGES[seg.ei]; const line=edgePolyline(seg); line.forEach(pt=>pts.push(pt)); totalMin+=e[2];
+      const note=e[3]||''; const warn=note.indexOf('⚠️')>=0||note.indexOf('★')>=0?note:''; const desc=warn?'':note;
+      steps.push({t:`${NODES[seg.from].name} → ${NODES[seg.to].name}`,m:`約 ${e[2]} 分${desc?' · '+desc:''}`,warn}); });
+  } else if(startNodeId!==dst){ pts.push([NODES[startNodeId].lat,NODES[startNodeId].lng],[NODES[dst].lat,NODES[dst].lng]); }
+  // 終點 leg（節點 → 實際目的地）
+  const lastNode=NODES[dst]; const finLeg=distM(lastNode,{lat,lng});
+  if(finLeg>40){ pts.push([lat,lng]); totalMin+=Math.max(1,Math.round(finLeg/75)); }
+  else { pts.push([lat,lng]); }
+  totalMin=Math.max(totalMin,1);
+  drawNav(pts,{lat,lng},name);
+  navSession={toName:name,toLat:lat,toLng:lng,checkinId,totalMin};
+  showNavBanner();
+  openNavSheet(steps,name,totalMin,startNodeId,checkinId);
 }
-function bindCheckin(id){
-  const btn=document.getElementById('ci_'+id); if(!btn) return;
-  btn.onclick=()=>{
-    const nv=!isChecked(id); setCheck(id,nv);
-    btn.classList.toggle('done',nv); btn.textContent=nv?'✓ 已打卡':'📍 打卡';
-    if(nv){ toast('✓','已打卡！'); checkAchievements(); }
-    rebuildRoute(); if(fallbackMode) renderFallback();
-  };
+function drawNav(pts,dest,name){
+  if(!navLayer){ return; }
+  navLayer.clearLayers();
+  if(fallbackMode)exitFallback();
+  // 白色底 + 藍線（Google 風）
+  navLayer.addLayer(L.polyline(pts,{color:'#ffffff',weight:9,opacity:.9,lineJoin:'round',lineCap:'round'}));
+  navLayer.addLayer(L.polyline(pts,{color:'#0a84ff',weight:5,opacity:1,lineJoin:'round',lineCap:'round'}));
+  navLayer.addLayer(L.marker([dest.lat,dest.lng],{zIndexOffset:2200,icon:L.divIcon({className:'',html:`<div class="nav-end"><span>🚩</span></div>`,iconSize:[34,34],iconAnchor:[17,34]})}));
+  if(map){ try{ map.fitBounds(L.latLngBounds(pts),{paddingTopLeft:[40,150],paddingBottomRight:[40,220]}); }catch(e){} }
+}
+function openNavSheet(steps,name,totalMin,startNodeId,checkinId){
+  const originOptions=Object.keys(NODES).map(k=>`<option value="${k}" ${k===startNodeId?'selected':''}>${NODES[k].name}</option>`).join('');
+  const stepHtml=steps.map((s,i)=>{ const fin=i===steps.length-1; return `<div class="step"><div class="num ${fin?'fin':''}">${i+1}</div><div class="sbody"><div class="st">${s.t}</div>${s.m?`<div class="sm">${s.m}</div>`:''}${s.warn?`<div class="warn">${s.warn}</div>`:''}</div></div>`; }).join('');
+  openSheet('🧭 帶我去 · '+name,
+   `<div class="navtot"><div class="big">約 ${totalMin} 分</div><div class="sub">🚶 推薦步行路線（祭典特化 · 已避開管制站）</div></div>
+    ${gpsLatLng?'':`<div class="origin-sel">📍 你現在在：<select id="originSel">${originOptions}</select></div>`}
+    <div class="card"><h4>逐段指引</h4>${stepHtml}</div>
+    <p style="font-size:.74rem;color:var(--muted);text-align:center">藍線已畫在地圖上。${gpsLatLng?'抵達目的地 60m 內會自動打卡 ✓':'開啟定位（左下 📍）可即時顯示剩餘距離與自動打卡。'}</p>`);
+  const sel=document.getElementById('originSel');
+  if(sel)sel.onchange=()=>{ manualOrigin=sel.value; navTo(navSession.toLat,navSession.toLng,navSession.toName,navSession.checkinId); };
+}
+function showNavBanner(){
+  const b=document.getElementById('navBanner'); if(!navSession){ b.classList.add('hidden'); return; }
+  let meta='🚶 推薦路線 · 約 '+navSession.totalMin+' 分';
+  if(gpsLatLng){ const d=distM(gpsLatLng,{lat:navSession.toLat,lng:navSession.toLng}); meta=`還有 ${fmtM(d)} · 約 ${Math.max(1,Math.round(d/75))} 分`; }
+  b.innerHTML=`<span class="ar">${ICONS.navarrow}</span><div class="mid"><div class="to">往 ${navSession.toName}</div><div class="meta">${meta}</div></div><button class="stop" id="navStop">結束</button>`;
+  b.classList.remove('hidden');
+  document.getElementById('navStop').onclick=stopNav;
+}
+function stopNav(){ navSession=null; if(navLayer)navLayer.clearLayers(); document.getElementById('navBanner').classList.add('hidden'); }
+function navArrivalCheck(){
+  if(!navSession||!gpsLatLng)return;
+  const d=distM(gpsLatLng,{lat:navSession.toLat,lng:navSession.toLng});
+  if(d<=60){
+    toast('🎉','抵達 '+navSession.toName+'！');
+    if(navSession.checkinId&&!isChecked(navSession.checkinId)){ setCheck(navSession.checkinId,true); }
+    store.flags=store.flags||{}; store.flags.navArrived=1; saveStore();
+    checkAchievements(); rebuildRoute(); updateAchvBadge(); stopNav();
+  } else showNavBanner();
 }
 
-/* ============================================================
-   目前任務 / 倒數
-   ============================================================ */
-function currentRouteIndex(){
-  const f=festClock(now());
-  if(!isFestDayF(f)) return -1;
-  const today=ROUTE.filter(r=>r.d===f.day);
-  let idx=-1;
-  for(let i=0;i<today.length;i++){ if(f.hm>=toMin(today[i].t)) idx=i; }
-  if(idx<0) return -1;
-  return ROUTE.indexOf(today[idx]);
-}
-function nextRoutePoint(){
-  const f=festClock(now());
-  if(!isFestDayF(f)) return null;
-  for(const r of ROUTE.filter(r=>r.d===f.day)){ if(toMin(r.t)>f.hm) return r; }
-  return null;
-}
-function updateTaskBar(){
-  const d=now(), f=festClock(d);
-  const dayName = (f.mo===7&&f.day===24)?'7/24 宵宮':(f.mo===7&&f.day===25)?'7/25 本宮':'';
-  document.getElementById('clock').innerHTML=`${pad(d.getHours())}:${pad(d.getMinutes())}<span class="day">${dayName}${simOffset?' · 模擬':''}</span>`;
-  document.getElementById('btnSim').textContent = simOffset?'🟣':'🕒';
-  const taskEl=document.querySelector('#taskLine .txt');
-  const cdEl=document.getElementById('countdown');
-  const idx=currentRouteIndex();
-  if(idx<0){
-    taskEl.textContent = isFestDay(d)?'祭典行程尚未開始':'非祭典日 — 點 🕒 可模擬時間預覽';
-    const nx=nextRoutePoint();
-    if(nx){ cdEl.innerHTML=`下一步：${nx.t} ${nx.title} · <b>${toMin(nx.t)-f.hm} 分後</b>`; } else cdEl.textContent='';
-  }else{
-    const cur=ROUTE[idx];
-    taskEl.textContent=`${cur.t} ${cur.title}`;
-    const nx=nextRoutePoint();
-    if(nx){ cdEl.innerHTML=`下一步：<b>${nx.t}</b> ${nx.title.split('→')[0].trim()} · <b>${toMin(nx.t)-f.hm} 分後</b>`; }
-    else cdEl.innerHTML='今日行程接近尾聲 🎆';
-  }
-  if(gpsLatLng) updateNextDistance();
-}
-
-/* ============================================================
-   「現在去哪」推薦
-   ============================================================ */
+/* =====================================================================
+   現在去哪（推薦引擎）
+   ===================================================================== */
 function recommend(){
   const f=festClock(now());
-  const R=(title,why,lat,lng)=>({title,why,goto:{lat,lng}});
-  if(!isFestDayF(f)){
-    return R('天神橋筋商店街 屋台','非祭典日：這是示意推薦。祭典期間本引擎會依當下時刻給出最佳點；點上方 🕒 可模擬 7/24、7/25 時間試玩。',34.6975,135.5108);
-  }
+  const R=(title,why,lat,lng)=>({title,why,lat,lng});
+  if(!isFestDayF(f)) return R('天神橋筋商店街 屋台','非祭典日：這是示意推薦。祭典期間會依當下時刻給最佳點；點右上 ⋯ → 時間預覽 可模擬 7/24、7/25 試玩。',34.6975,135.5108);
   const hm=f.hm;
   if(f.day===24){
     if(hm<15*60) return R('天神橋筋商店街 屋台','宵宮屋台 15:00 才開，先在商店街南段閒逛卡位。',34.6975,135.5108);
@@ -716,360 +842,293 @@ function recommend(){
   }
   if(hm<14*60) return R('天神橋筋商店街 屋台','本宮屋台 12:00 就開，尖峰(17:00)前最好逛 — 現在最舒服！',34.6975,135.5108);
   if(hm<15*60+30) return R('商店街屋台 / 準備北上','14:00 本宮祭、15:30 陸渡御。若要卡花火位，該吃飽準備往桜ノ宮了。',34.6975,135.5108);
-  if(hm<17*60+30) return R('源八橋西岸 卡位','花火近景要靠佔位。17:30 前抵達源八橋西岸鋪野餐墊。',34.7025,135.5182);
-  if(hm<19*60+30) return R('源八橋西岸 · 顧位＋買晚餐','卡位時段：一人顧位、一人去東岸屋台買晚餐，等 19:30 開場。',34.7025,135.5182);
-  if(hm<20*60+50) return R('原地看花火 🎆','花火進行中(19:30–20:50)，頭頂近景，別移動。',34.7025,135.5182);
-  if(hm<21*60+10) return R('原地等待 15 分鐘','散場第一波最擠，原地等到 21:10 再走最快。切勿衝桜ノ宮駅。',34.7025,135.5182);
+  if(hm<17*60+30) return R('源八橋西岸 卡位','花火近景要靠佔位。17:30 前抵達源八橋西岸鋪野餐墊。',34.7030,135.5188);
+  if(hm<19*60+30) return R('源八橋西岸 · 顧位＋買晚餐','一人顧位、一人去東岸屋台買晚餐，等 19:30 開場。',34.7030,135.5188);
+  if(hm<20*60+50) return R('原地看花火 🎆','花火進行中(19:30–20:50)，頭頂近景，別移動。',34.7030,135.5188);
+  if(hm<21*60+10) return R('原地等待 15 分鐘','散場第一波最擠，原地等到 21:10 再走最快。切勿衝桜ノ宮駅。',34.7030,135.5188);
   return R('沿東岸南行 → 京橋','往京橋走 15–20 分再搭車，絕不進桜ノ宮駅。京橋疏散力最強。',34.6970,135.5340);
 }
 function openRecommend(){
   const r=recommend();
-  openSheet('現在去哪？',
-   `<div class="rec-card">
-     <div style="font-size:.72rem;color:var(--muted);letter-spacing:1px">此刻最推薦</div>
-     <div class="title">${r.title}</div>
-     <div class="why">${r.why}</div>
-     <button class="go" id="recGo">🧭 在地圖上定位此點</button>
-   </div>
-   <div class="mini-h">同時參考</div>
-   ${liveSnapshotHtml()}`);
-  const g=document.getElementById('recGo');
-  if(g) g.onclick=()=>{ closeSheet(); if(fallbackMode) exitFallback();
-    if(map){ map.flyTo([r.goto.lat,r.goto.lng],16); L.popup().setLatLng([r.goto.lat,r.goto.lng]).setContent('👈 '+r.title).openOn(map);} };
+  openSheet('🧭 現在去哪？',
+   `<div class="hero"><div class="kick">此刻最推薦</div><div class="title">${r.title}</div><div class="why">${r.why}</div>
+     <div class="acts"><button class="bigbtn primary" onclick="navTo(${r.lat},${r.lng},'${r.title.replace(/'/g,'').slice(0,18)}',null)">🧭 帶我去</button>
+     <button class="bigbtn ghost" id="recLocate">📍 地圖定位此點</button></div></div>
+    ${festClock(now()).day===25&&festClock(now()).mo===7?hanabiCountdownHtml():''}
+    ${yataiNearHtml(r.lat,r.lng)}
+    ${liveSnapshotHtml()}`);
+  const g=document.getElementById('recLocate'); if(g)g.onclick=()=>{ closeSheet(); if(fallbackMode)exitFallback(); if(map){ map.flyTo([r.lat,r.lng],16); L.popup().setLatLng([r.lat,r.lng]).setContent('👈 '+r.title).openOn(map); } };
 }
-
 function liveSnapshotHtml(){
   const f=festClock(now());
   const hot=CROWD.map(z=>({z,lv:crowdLevelAt(z,f)})).filter(x=>x.lv!=='green').sort((a,b)=>(a.lv==='red'?0:1)-(b.lv==='red'?0:1));
-  const hotHtml = hot.length? hot.map(x=>`<li><span class="pill" style="background:${LV[x.lv].c};color:#fff">${LV[x.lv].t}</span> <b>${x.z.name}</b> ${activeWindowNote(x.z,f)?'· '+activeWindowNote(x.z,f):''}</li>`).join('') : '<li>目前無明顯壅塞熱區</li>';
-  let hb='本日無花火（7/24 無花火）。';
-  if(f.day===25){
-    if(f.hm<17*60+30) hb='免費近景（源八橋/銀橋）需即刻卡位；穴場(都島大橋/OAP)18:30 前到即可。';
-    else if(f.hm<20*60+50) hb='進行中：付費會場憑票入場；免費區已滿，穴場把握最後名額。';
-    else hb='花火已近尾聲/結束 — 重點轉為散場動線。';
-  }
-  return `
-   <div class="info-block"><h4>🔥 現在最熱鬧 / 該避開</h4><ul>${hotHtml}</ul></div>
-   <div class="info-block"><h4>🍢 屋台在哪</h4><ul>
-     <li><b>天神橋筋商店街</b>：密度最高（僅天三以南）</li>
-     <li><b>大川東岸</b>：可邊吃邊看花火</li>
-     <li><b>南天滿公園</b>：規模較小、較緩和</li></ul></div>
-   <div class="info-block"><h4>🎆 該去哪看花火</h4><p style="color:var(--text)">${hb}</p></div>
-   <div class="info-block"><h4>🚉 回程避開哪些站</h4><ul>
-     <li><span class="pill" style="background:${SSTAT.avoid.c};color:#fff">避</span> 南森町、桜ノ宮</li>
-     <li><span class="pill" style="background:${SSTAT.best.c};color:#fff">推</span> 京橋（疏散力最強）、北浜／淀屋橋</li></ul></div>`;
+  const hotHtml=hot.length?hot.map(x=>`<li><span class="pill" style="background:${LV[x.lv].c}">${LV[x.lv].t}</span> <b>${x.z.name}</b> ${activeWindowNote(x.z,f)?'· '+activeWindowNote(x.z,f):''}</li>`).join(''):'<li>目前無明顯壅塞熱區</li>';
+  return `<div class="card"><h4>🔥 現在最熱鬧 / 該避開</h4><ul>${hotHtml}</ul></div>`;
 }
 
-/* ============================================================
-   Fallback 文字模式
-   ============================================================ */
-function renderFallback(){
+/* ---------- 花火倒數 ---------- */
+function hanabiCountdownHtml(){
+  const t=now().getTime();
+  const start=new Date(FEST_YEAR,6,25,19,30,0).getTime(), end=new Date(FEST_YEAR,6,25,20,50,0).getTime();
+  let big,sub;
+  if(t<start){
+    const mins=Math.round((start-t)/60000);
+    if(mins>=1440){ const days=Math.floor(mins/1440),hh=Math.floor((mins%1440)/60); big=`還有 ${days} 天 ${hh} 小時`; }
+    else { const h=Math.floor(mins/60),m=mins%60; big=h>0?`還有 ${h} 小時 ${pad(m)} 分`:`還有 ${m} 分`; }
+    sub='距 7/25 19:30 奉納花火開始';
+  } else if(t<=end){ big='🎆 花火進行中！'; sub='19:30–20:50 · 頭頂近景，別移動'; }
+  else { big='今年花火已結束 🎆'; sub='散場請往京橋，勿衝桜ノ宮駅'; }
+  return `<div class="navtot" style="background:linear-gradient(135deg,#3a1d4d,#231a3a);border-color:#a855f7"><div class="big">${big}</div><div class="sub" style="color:#d8bff2">${sub}</div></div>`;
+}
+
+/* ---------- 屋台美食制覇 ---------- */
+function openGourmet(){
+  store.gourmet=store.gourmet||{};
+  const got=GOURMET.filter(g=>store.gourmet[g.id]).length,tot=GOURMET.length,pct=Math.round(got/tot*100);
+  openSheet('🍡 屋台美食制覇',
+   `<div class="progwrap"><div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:1.05rem">已收集 ${got}/${tot}</b><span style="color:var(--gold);font-weight:800">${pct}%</span></div><div class="progbar"><div class="fill" style="width:${pct}%"></div></div></div>
+    <div class="card"><p>邊逛屋台邊打勾，集滿 6 樣解鎖「🍡 屋台美食家」成就！</p></div>
+    <div id="gourmetList">${GOURMET.map(g=>{const on=!!store.gourmet[g.id];return `<div class="remind-item ${on?'on':''}" data-gid="${g.id}"><div class="ck">${on?'✓':''}</div><div class="lbl" style="font-size:1rem">${g.emoji} ${g.name}</div></div>`;}).join('')}</div>`);
+  document.querySelectorAll('#gourmetList .remind-item').forEach(el=>el.onclick=()=>{
+    const id=el.dataset.gid; store.gourmet[id]=!store.gourmet[id];
+    if(GOURMET.every(g=>store.gourmet[g.id])){ store.flags=store.flags||{}; store.flags.gourmetDone=1; }
+    saveStore(); checkAchievements(); updateAchvBadge(); openGourmet();
+  });
+}
+
+/* ---------- 冷知識翻頁 ---------- */
+let triviaIdx=0;
+function openTrivia(){
+  const n=TRIVIA.length, i=((triviaIdx%n)+n)%n, fact=TRIVIA[i];
+  openSheet('💡 天神祭 冷知識',
+   `<div class="hero"><div class="kick">冷知識 ${i+1}/${n}</div><div class="why" style="font-size:1.02rem;color:var(--text);margin-top:10px;line-height:1.7">${fact}</div>
+     <div class="acts"><button class="bigbtn primary" id="trivNext">下一則 ➜</button></div></div>`);
+  document.getElementById('trivNext').onclick=()=>{ triviaIdx++; openTrivia(); };
+}
+
+/* ---------- 屋台清單 ---------- */
+function openYataiList(){
+  const origin=gpsLatLng||NODES[manualOrigin];
+  const list=YATAI.map(y=>({y,d:distM(origin,{lat:y.lat,lng:y.lng})})).sort((a,b)=>a.d-b.d);
+  openSheet('🍢 屋台在哪',
+   `<div class="card"><p>屋台多在 11:00–23:00，尖峰 17:00–20:00。多數<b>只收現金</b>。${gpsLatLng?'（已依你的位置排序）':'（未定位，依天滿宮排序）'}</p></div>
+    <button class="bigbtn primary" style="width:100%;margin-bottom:12px" onclick="openGourmet()">🍡 屋台美食制覇（邊吃邊集點）</button>
+    ${list.map((o,i)=>`<div class="row ${i===0?'now':''}"><div class="lead"><div class="em">🍢</div>${fmtM(o.d)}</div><div class="body"><div class="t">${o.y.name}</div><div class="d"><span class="pill" style="background:${o.y.color};color:#111">${o.y.level}</span> ${o.y.info.slice(0,34)}…</div></div><div class="go"><button class="gobtn" onclick="navTo(${o.y.lat},${o.y.lng},'${o.y.name.replace(/'/g,'')}','yt-${o.y.id}')">帶我去</button></div></div>`).join('')}`);
+}
+/* ---------- 花火指南 ---------- */
+function openHanabiGuide(){
   const f=festClock(now());
-  document.getElementById('fbTime').textContent=`7/${f.day||'?'} ${pad(f.h)}:${pad(f.m)}`;
-  const r=recommend();
-  document.getElementById('fbContent').innerHTML=`
-    <div class="fb-card" style="border-color:var(--accent)">
-      <h3>🧭 此刻最推薦 <span class="badge" style="background:var(--accent);color:#fff">GO</span></h3>
-      <div style="font-size:1.05rem;font-weight:800;color:var(--accent2)">${r.title}</div>
-      <div style="font-size:.8rem;color:var(--muted);margin-top:5px">${r.why}</div>
-    </div>
-    ${liveSnapshotHtml().replace(/info-block/g,'fb-card')}
-    <div class="fb-card"><h3>🧭 我的下一步</h3><ul id="fbRoute"></ul></div>`;
-  const cur=currentRouteIndex(), nx=nextRoutePoint();
-  const ul=document.getElementById('fbRoute');
-  if(ul){
-    let h='';
-    if(cur>=0) h+=`<li><b>現在</b>：${ROUTE[cur].t} ${ROUTE[cur].title}</li>`;
-    if(nx) h+=`<li><b>下一步</b>：${nx.t} ${nx.title} <span style="color:var(--accent2)">(${toMin(nx.t)-f.hm} 分後)</span></li>`;
-    if(!h) h='<li>非行程時段。點上方 🕒 可模擬祭典時間。</li>';
-    ul.innerHTML=h;
-  }
+  const byTier=t=>HANABI.filter(h=>h.tier===t);
+  const sec=(t)=>{ const info=HTIER[t]; return `<div class="mini-h">${info.emoji} ${info.name}</div>`+byTier(t).map(h=>`<div class="row"><div class="lead"><div class="em">${info.emoji}</div></div><div class="body"><div class="t">${h.name}</div><div class="d">${h.view} · ${h.arrive} · ${h.crowd}</div></div><div class="go"><button class="gobtn" onclick="navTo(${h.lat},${h.lng},'${h.name.replace(/'/g,'').slice(0,16)}','hb-${h.id}')">帶我去</button></div></div>`).join(''); };
+  let tip='🎆 花火是 7/25 19:30–20:50（7/24 無花火）。';
+  if(f.day===25){ if(f.hm<17*60+30)tip='現在：免費近景（源八橋/銀橋）需即刻卡位；穴場 18:30 前到即可。'; else if(f.hm<20*60+50)tip='進行中：付費會場憑票；免費區已滿，穴場把握。'; else tip='花火近尾聲 — 重點轉為散場動線，見「回程」分頁。'; }
+  openSheet('🎆 哪裡看花火',`${hanabiCountdownHtml()}<div class="card" style="border-color:var(--accent)"><p style="color:var(--text)">${tip}</p></div>${sec('free')}${sec('paid')}${sec('hidden')}`);
+}
+/* ---------- 回程指南 ---------- */
+function openEscape(){
+  const grp=s=>STATION.filter(x=>x.status===s);
+  const sec=(s)=>{ const info=SSTAT[s]; return grp(s).map(p=>`<div class="row"><div class="lead"><div class="em">🚉</div></div><div class="body"><div class="t">${p.name} <span class="pill" style="background:${info.c}">${info.t}</span></div><div class="d">${p.day} · ${p.note}</div></div><div class="go"><button class="gobtn ${s==='avoid'?'ghost':''}" onclick="navTo(${p.lat},${p.lng},'${p.name}',null)">帶我去</button></div></div>`).join(''); };
+  openSheet('🚉 怎麼回家最順',
+   `<div class="card" style="border-color:var(--red)"><h4>🎆 花火散場鐵則</h4><p style="color:var(--text)">原地等 <b>15 分鐘</b>（20:50–21:10 第一波最擠），往<b style="color:var(--green)">京橋</b>走，<b style="color:var(--red)">勿衝桜ノ宮駅</b>。21:00 後計程車叫不到。</p></div>
+    <div class="mini-h">✅ 推薦回程</div>${sec('best')}${sec('ok')}
+    <div class="mini-h">⚠️ 管制 / 擁擠</div>${sec('warn')}
+    <div class="mini-h">⛔ 全力避開</div>${sec('avoid')}`);
+}
+/* ---------- 我的行程 ---------- */
+function openRouteSheet(){
+  openSheet('🗺️ 我的兩日行程',
+   `<div class="mini-h">7/24（五）宵宮</div>${ROUTE.filter(r=>r.d===24).map(routeRowHtml).join('')}
+    <div class="mini-h">7/25（六）本宮</div>${ROUTE.filter(r=>r.d===25).map(routeRowHtml).join('')}`);
+  bindRouteRows();
+}
+function routeRowHtml(r){ const done=isChecked(r.id); const idx=currentRouteIndex(); const isNow=ROUTE[idx]&&ROUTE[idx].id===r.id;
+  return `<div class="row ${isNow?'now':''} ${done?'done':''}" data-id="${r.id}"><div class="lead">${r.t}</div><div class="body"><div class="t">${r.title}</div><div class="d">${r.desc}</div></div><div class="go"><button class="chkbtn ${done?'done':''}" data-chk="${r.id}">${done?'✓':'打卡'}</button></div></div>`; }
+function bindRouteRows(){
+  bindRouteChk();
+  document.querySelectorAll('.row[data-id]').forEach(el=>el.onclick=()=>{ const r=ROUTE.find(x=>x.id===el.dataset.id); const i=ROUTE.indexOf(r); if(!fallbackMode&&map){ closeSheet(); map.flyTo([r.lat,r.lng],16); setTimeout(()=>openRoutePoint(r,i),350); } else openRoutePoint(r,i); });
 }
 
-/* ============================================================
-   GPS
-   ============================================================ */
-function inAppBrowser(){
-  const ua=navigator.userAgent||'';
-  return window.self!==window.top || /FBAN|FBAV|Instagram|Line|MicroMessenger|Twitter|KAKAOTALK|snapchat/i.test(ua);
+/* =====================================================================
+   目前任務 / 倒數
+   ===================================================================== */
+function currentRouteIndex(){ const f=festClock(now()); if(!isFestDayF(f))return-1; const today=ROUTE.filter(r=>r.d===f.day); let idx=-1; for(let i=0;i<today.length;i++){ if(f.hm>=toMin(today[i].t))idx=i; } if(idx<0)return-1; return ROUTE.indexOf(today[idx]); }
+function nextRoutePoint(){ const f=festClock(now()); if(!isFestDayF(f))return null; for(const r of ROUTE.filter(r=>r.d===f.day)){ if(toMin(r.t)>f.hm)return r; } return null; }
+function updateTaskBar(){
+  const d=now(),f=festClock(d);
+  const dayName=(f.mo===7&&f.day===24)?'7/24 宵宮':(f.mo===7&&f.day===25)?'7/25 本宮':'';
+  document.getElementById('clock').innerHTML=`${pad(d.getHours())}:${pad(d.getMinutes())}${dayName?`<span class="day">${dayName}${simOffset?' 模擬':''}</span>`:(simOffset?'<span class="day">模擬</span>':'')}`;
+  const tx=document.querySelector('#taskChip .tx'),cd=document.querySelector('#taskChip .cd');
+  const idx=currentRouteIndex();
+  if(idx<0){ tx.textContent=isFestDay(d)?'祭典行程尚未開始':'非祭典日 — ⋯選單可模擬時間'; const nx=nextRoutePoint(); cd.textContent=nx?`${toMin(nx.t)-f.hm}分後`:''; }
+  else { const cur=ROUTE[idx]; tx.textContent=cur.title; const nx=nextRoutePoint(); cd.textContent=nx?`${toMin(nx.t)-f.hm}分後`:'🎆'; }
 }
+
+/* =====================================================================
+   GPS
+   ===================================================================== */
+function inAppBrowser(){ const ua=navigator.userAgent||''; return window.self!==window.top||/FBAN|FBAV|Instagram|Line|MicroMessenger|Twitter|KAKAOTALK|snapchat/i.test(ua); }
 function toggleGps(){
   const btn=document.getElementById('fabGps');
-  if(gpsWatch){ navigator.geolocation.clearWatch(gpsWatch); gpsWatch=null; btn.classList.remove('active'); if(gpsMarker&&map){map.removeLayer(gpsMarker);} gpsMarker=null; gpsLatLng=null; gpsCentered=false; toast('📍','已關閉定位'); updateTaskBar(); return; }
-  if(!navigator.geolocation){ toast('⚠️','此裝置/瀏覽器不支援定位，可手動打卡'); return; }
+  if(gpsWatch){ navigator.geolocation.clearWatch(gpsWatch); gpsWatch=null; btn.classList.remove('active'); if(gpsMarker&&map)map.removeLayer(gpsMarker); gpsMarker=null; gpsLatLng=null; gpsCentered=false; toast('📍','已關閉定位'); return; }
+  if(!navigator.geolocation){ toast('⚠️','此裝置不支援定位，可手動打卡'); return; }
   if(!window.isSecureContext){ gpsHelp('insecure'); return; }
-  btn.classList.add('active');
-  toast('📡','定位中…請允許位置權限');
-  navigator.geolocation.getCurrentPosition(
-    pos=>{ gpsLatLng={lat:pos.coords.latitude,lng:pos.coords.longitude}; placeGps(); startWatch(); },
-    err=>{ btn.classList.remove('active'); gpsError(err); },
-    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
-  );
+  btn.classList.add('active'); toast('📡','定位中…請允許位置權限');
+  navigator.geolocation.getCurrentPosition(pos=>{ gpsLatLng={lat:pos.coords.latitude,lng:pos.coords.longitude}; placeGps(); startWatch(); },err=>{ btn.classList.remove('active'); gpsError(err); },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
-function startWatch(){
-  gpsWatch=navigator.geolocation.watchPosition(
-    pos=>{ gpsLatLng={lat:pos.coords.latitude,lng:pos.coords.longitude}; placeGps(); },
-    ()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:20000});
-}
-function gpsError(err){
-  if(err.code===1){ gpsHelp(inAppBrowser()?'inapp':'denied'); }
-  else{ toast('📍',(err.code===2?'目前收不到定位訊號':'定位逾時')+' — 可改用手動打卡'); }
-}
+function startWatch(){ gpsWatch=navigator.geolocation.watchPosition(pos=>{ gpsLatLng={lat:pos.coords.latitude,lng:pos.coords.longitude}; placeGps(); },()=>{},{enableHighAccuracy:true,maximumAge:5000,timeout:20000}); }
+function gpsError(err){ if(err.code===1)gpsHelp(inAppBrowser()?'inapp':'denied'); else toast('📍',(err.code===2?'目前收不到定位訊號':'定位逾時')+' — 可改用手動打卡'); }
 function gpsHelp(kind){
-  const common=`<div class="info-block" style="border-color:var(--green)"><h4>✅ 不定位也完全能用</h4>
-    <p style="color:var(--text)">所有打卡都能<b>手動</b>按；行程、倒數、現在去哪、情報圖層都不受影響。定位只是「自動打卡＋顯示你到下一站的距離方位」的加分功能。</p></div>`;
+  const common=`<div class="card" style="border-color:var(--green)"><h4>✅ 不定位也完全能用</h4><p style="color:var(--text)">所有打卡都能<b>手動</b>按；導航、行程、現在去哪、情報圖層都不受影響。定位只是「自動打卡＋顯示到目的地的剩餘距離」的加分功能。</p></div>`;
   let head;
-  if(kind==='inapp'){
-    head=`<div class="info-block" style="border-color:var(--accent2)"><h4>📲 你可能在「App 內建瀏覽器」開啟</h4>
-      <p>在 LINE／IG／FB／Messenger 等 App 內開網頁時，系統會直接擋掉定位（不會跳出詢問）。</p>
-      <p style="margin-top:6px;color:var(--text)"><b>解法：</b>點右上角「⋯」→ 選「<b>在 Safari / Chrome 開啟</b>」，再按一次定位即可。</p></div>`;
-  }else if(kind==='insecure'){
-    head=`<div class="info-block" style="border-color:var(--accent2)"><h4>🔒 需要 https 網頁</h4>
-      <p>目前網址不是 https，瀏覽器會禁止定位。請用 GitHub Pages 的 https 網址開啟。</p></div>`;
-  }else{
-    head=`<div class="info-block" style="border-color:var(--accent2)"><h4>📍 定位被系統擋住（你不一定按了拒絕）</h4>
-      <p>「權限被拒」常常不是你手動按的，多半是下列設定：</p>
-      <ul style="margin-top:6px">
-        <li><b>iOS</b>：設定 → 隱私與安全性 → 定位服務 → 要<b>開啟</b>，且下方「Safari 網站」設為「詢問」或「使用 App 期間」</li>
-        <li><b>網站權限</b>：網址列旁 ⓐＡ 或 ⓘ → 網站設定 → 位置 → 改為<b>允許</b>，再重新整理</li>
-        <li><b>Android Chrome</b>：⋮ → 設定 → 網站設定 → 位置 → 允許</li>
-      </ul></div>`;
-  }
-  const diag=`<div class="info-block"><h4>🔧 定位診斷（截圖給我即可判斷）</h4><ul>
-     <li>網址協定：<b>${location.protocol}</b></li>
-     <li>安全連線 https：<b>${window.isSecureContext?'是 ✓':'否 ✗（定位會被禁止）'}</b></li>
-     <li>App內建瀏覽器/內嵌框架：<b>${inAppBrowser()?'是 ← 很可能是主因':'否'}</b></li>
-     <li>系統權限狀態：<b id="permState">查詢中…</b></li>
-   </ul></div>`;
-  openSheet('📍 定位無法使用',head+diag+common);
-  if(navigator.permissions&&navigator.permissions.query){
-    navigator.permissions.query({name:'geolocation'})
-      .then(r=>{ const e=document.getElementById('permState'); if(e) e.textContent=({granted:'已允許（granted）',denied:'被拒絕（denied）',prompt:'尚未決定（prompt）'}[r.state]||r.state); })
-      .catch(()=>{ const e=document.getElementById('permState'); if(e) e.textContent='無法查詢'; });
-  }else{ const e=document.getElementById('permState'); if(e) e.textContent='此瀏覽器不支援查詢'; }
+  if(kind==='inapp')head=`<div class="card" style="border-color:var(--gold)"><h4>📲 你可能在 App 內建瀏覽器開啟</h4><p>在 LINE／IG／FB 等 App 內開網頁時，系統會直接擋掉定位。</p><p style="margin-top:6px;color:var(--text)"><b>解法：</b>點右上「⋯」→「在 Safari / Chrome 開啟」，再按一次定位。</p></div>`;
+  else if(kind==='insecure')head=`<div class="card" style="border-color:var(--gold)"><h4>🔒 需要 https 網頁</h4><p>目前網址不是 https，瀏覽器會禁止定位。請用 GitHub Pages 的 https 網址開啟。</p></div>`;
+  else head=`<div class="card" style="border-color:var(--gold)"><h4>📍 定位被系統擋住</h4><ul style="margin-top:6px"><li><b>iOS</b>：設定 → 隱私 → 定位服務 → 開啟，Safari 設「使用期間」</li><li><b>網站權限</b>：網址列旁 ⓐＡ → 網站設定 → 位置 → 允許，重新整理</li><li><b>Android</b>：⋮ → 設定 → 網站設定 → 位置 → 允許</li></ul></div>`;
+  openSheet('📍 定位無法使用',head+common);
 }
 function placeGps(){
-  if(!gpsLatLng) return;
+  if(!gpsLatLng)return;
   if(map){
-    if(!gpsMarker) gpsMarker=L.marker([gpsLatLng.lat,gpsLatLng.lng],{icon:L.divIcon({className:'',html:'<div class="gps-dot"></div>',iconSize:[18,18],iconAnchor:[9,9]}),zIndexOffset:2000}).addTo(map);
+    if(!gpsMarker)gpsMarker=L.marker([gpsLatLng.lat,gpsLatLng.lng],{icon:L.divIcon({className:'',html:'<div class="gps-dot"></div>',iconSize:[18,18],iconAnchor:[9,9]}),zIndexOffset:2000}).addTo(map);
     else gpsMarker.setLatLng([gpsLatLng.lat,gpsLatLng.lng]);
-    if(!gpsCentered){
-      gpsCentered=true;
-      const d=distM(gpsLatLng,FEST_CENTER);
-      if(d<5000){ map.setView([gpsLatLng.lat,gpsLatLng.lng],16); toast('📍','已定位到你的位置'); }
-      else{ map.setView([FEST_CENTER.lat,FEST_CENTER.lng],14); toast('📍','你距會場約 '+Math.round(d/1000)+' km（地圖仍停在會場）'); }
-    }
+    if(!gpsCentered&&!navSession){ gpsCentered=true; const d=distM(gpsLatLng,FEST_CENTER); if(d<5000){ map.setView([gpsLatLng.lat,gpsLatLng.lng],16); toast('📍','已定位到你的位置'); } else { map.setView([FEST_CENTER.lat,FEST_CENTER.lng],14); toast('📍','你距會場約 '+Math.round(d/1000)+' km'); } }
   }
-  autoCheckinNearby(); updateNextDistance();
+  autoCheckinNearby(); navArrivalCheck();
 }
-function distM(a,b){
-  const R=6371000,toR=x=>x*Math.PI/180;
-  const dLat=toR(b.lat-a.lat),dLng=toR(b.lng-a.lng);
-  const s=Math.sin(dLat/2)**2+Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;
-  return 2*R*Math.asin(Math.sqrt(s));
-}
-function autoCheckinNearby(){
-  if(!gpsLatLng) return;
-  ROUTE.forEach(r=>{
-    if(!isChecked(r.id) && distM(gpsLatLng,{lat:r.lat,lng:r.lng})<=100){
-      setCheck(r.id,true); toast('✓','自動打卡：'+r.title); checkAchievements(); rebuildRoute();
-    }
-  });
-}
-function bearing(a,b){
-  const toR=x=>x*Math.PI/180,toD=x=>x*180/Math.PI;
-  const y=Math.sin(toR(b.lng-a.lng))*Math.cos(toR(b.lat));
-  const x=Math.cos(toR(a.lat))*Math.sin(toR(b.lat))-Math.sin(toR(a.lat))*Math.cos(toR(b.lat))*Math.cos(toR(b.lng-a.lng));
-  return (toD(Math.atan2(y,x))+360)%360;
-}
-function compass(deg){const d=['北','東北','東','東南','南','西南','西','西北'];return d[Math.round(deg/45)%8];}
-function updateNextDistance(){
-  const nx=nextRoutePoint(); const cdEl=document.getElementById('countdown');
-  if(gpsLatLng && nx){
-    const dm=Math.round(distM(gpsLatLng,{lat:nx.lat,lng:nx.lng}));
-    const dir=compass(bearing(gpsLatLng,{lat:nx.lat,lng:nx.lng}));
-    const f=festClock(now());
-    cdEl.innerHTML=`下一步：<b>${nx.t}</b> ${nx.title.split('→')[0].trim()} · 距 <b>${dm>=1000?(dm/1000).toFixed(1)+'km':dm+'m'}</b> ${dir}方 · <b>${toMin(nx.t)-f.hm} 分後</b>`;
-  }
-}
+function autoCheckinNearby(){ if(!gpsLatLng)return; ROUTE.forEach(r=>{ if(!isChecked(r.id)&&distM(gpsLatLng,{lat:r.lat,lng:r.lng})<=100){ setCheck(r.id,true); toast('✓','自動打卡：'+r.title); checkAchievements(); rebuildRoute(); updateAchvBadge(); } }); }
 
-/* ============================================================
-   成就 / 提醒
-   ============================================================ */
-function achvGot(a){
-  const needOk = a.need.every(id=>isChecked(id));
-  if(needOk) return true;
-  if(a.anyPrefix && anyCheckedPrefix(a.anyPrefix)) return true;
-  return false;
-}
+/* =====================================================================
+   成就 / 提醒 / 選單
+   ===================================================================== */
+function achvGot(a){ if(a.flag&&store.flags&&store.flags[a.flag])return true; if(a.need&&a.need.length&&a.need.every(id=>isChecked(id)))return true; if(a.anyPrefix&&anyCheckedPrefix(a.anyPrefix))return true; return false; }
+function achvCount(){ return ACHV.filter(achvGot).length; }
+function updateAchvBadge(){ document.getElementById('achvN').textContent=achvCount(); }
 function openAchv(){
-  openSheet('🏅 成就集章',
-   `<div class="achv-grid">${ACHV.map(a=>{
-     const got=achvGot(a);
-     return `<div class="achv ${got?'got':''}"><div class="emoji">${a.emoji}</div><div class="an">${a.name}</div><div class="ad">${a.desc}</div><div class="prog">${got?'✓ 已達成':'未達成'}</div></div>`;
-   }).join('')}</div>
-   <div class="mini-h">說明</div>
-   <div class="info-block"><p>行程點與情報點皆可打卡（GPS 100 公尺內自動、或手動）。進度以 localStorage 保存於本機。</p></div>
-   <button class="chkbtn" id="resetAll" style="width:100%;padding:11px;margin-top:12px;color:var(--red);border-color:var(--red)">清除所有打卡紀錄</button>`);
-  document.getElementById('resetAll').onclick=()=>{ if(confirm('確定清除所有打卡與成就紀錄？')){ store.checkins={}; store.achv={}; saveStore(); rebuildRoute(); openAchv(); toast('🗑️','已清除'); } };
-}
-function checkAchievements(){
-  if(!store.achv) store.achv={};
-  ACHV.forEach(a=>{
-    if(achvGot(a) && !store.achv[a.id]){ store.achv[a.id]=1; saveStore(); toast(a.emoji,'成就達成：'+a.name); }
-  });
+  const got=achvCount(),tot=ACHV.length,pct=Math.round(got/tot*100);
+  openSheet('🏅 御朱印集章',
+   `<div class="progwrap"><div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:1.05rem">已收集 ${got}/${tot}</b><span style="color:var(--gold);font-weight:800">${pct}%</span></div><div class="progbar"><div class="fill" style="width:${pct}%"></div></div></div>
+    <div class="achv-grid">${ACHV.map(a=>{ const g=achvGot(a); return `<div class="achv ${g?'got':''}"><div class="emoji">${a.emoji}</div><div class="an">${a.name}</div><div class="ad">${a.desc}</div><div class="ad" style="color:${g?'var(--gold)':'var(--muted)'};font-weight:800;margin-top:4px">${g?'✓ 已達成':'未達成'}</div></div>`; }).join('')}</div>
+    <p style="font-size:.74rem;color:var(--muted);margin-top:12px;text-align:center">行程點與情報點皆可打卡（GPS 100m 內自動、或手動）。進度存於本機。</p>`);
 }
 function openRemind(){
-  openSheet('🎒 常駐提醒',
-   `<div class="info-block" style="border-color:var(--accent2)"><h4>🎒 7/25 出門清單</h4>
-      <div id="remindList">${REMIND_LIST.map(r=>`<div class="remind-item ${store.reminds[r.id]?'on':''}" data-id="${r.id}"><div class="ck">${store.reminds[r.id]?'✓':''}</div><div class="lbl">${r.t}</div></div>`).join('')}</div></div>
-    <div class="info-block" style="border-color:var(--red)"><h4>🎆 花火結束提醒</h4>
-      <p style="color:var(--text)">原地等 <b>15 分鐘</b>，往<b>京橋</b>走，<b style="color:var(--red)">勿衝桜ノ宮駅</b>。散場第一波（20:50–21:10）原地等待最快；21:00 後計程車叫不到。</p></div>`);
-  document.querySelectorAll('#remindList .remind-item').forEach(el=>{
-    el.onclick=()=>{ const id=el.dataset.id; store.reminds[id]=!store.reminds[id]; saveStore(); el.classList.toggle('on',store.reminds[id]); el.querySelector('.ck').textContent=store.reminds[id]?'✓':''; };
-  });
+  openSheet('🎒 出門清單',
+   `<div class="card" style="border-color:var(--gold)"><h4>🎒 7/25 出門清單</h4><div id="remindList">${REMIND_LIST.map(r=>`<div class="remind-item ${store.reminds[r.id]?'on':''}" data-id="${r.id}"><div class="ck">${store.reminds[r.id]?'✓':''}</div><div class="lbl">${r.t}</div></div>`).join('')}</div></div>`);
+  document.querySelectorAll('#remindList .remind-item').forEach(el=>el.onclick=()=>{ const id=el.dataset.id; store.reminds[id]=!store.reminds[id]; saveStore(); el.classList.toggle('on',store.reminds[id]); el.querySelector('.ck').textContent=store.reminds[id]?'✓':''; });
+}
+function openMenu(){
+  openSheet('⋯ 更多',
+   `<div class="menu-item" id="mSim"><span class="mi">🕒</span>時間預覽（模擬祭典時刻）<span class="ch">›</span></div>
+    <div class="menu-item" id="mRemind"><span class="mi">🎒</span>出門清單<span class="ch">›</span></div>
+    <div class="menu-item" id="mAchv"><span class="mi">🏅</span>御朱印集章<span class="ch">›</span></div>
+    <div class="menu-item" id="mGourmet"><span class="mi">🍡</span>屋台美食制覇<span class="ch">›</span></div>
+    <div class="menu-item" id="mTrivia"><span class="mi">💡</span>天神祭 冷知識<span class="ch">›</span></div>
+    <div class="menu-item" id="mHelp"><span class="mi">❓</span>使用說明<span class="ch">›</span></div>
+    <div class="menu-item" id="mReset"><span class="mi" style="color:var(--red)">🗑️</span><span style="color:var(--red)">重置所有打卡紀錄</span></div>`);
+  document.getElementById('mSim').onclick=openSim;
+  document.getElementById('mRemind').onclick=openRemind;
+  document.getElementById('mAchv').onclick=openAchv;
+  document.getElementById('mGourmet').onclick=openGourmet;
+  document.getElementById('mTrivia').onclick=openTrivia;
+  document.getElementById('mHelp').onclick=openHelp;
+  document.getElementById('mReset').onclick=()=>{ if(confirm('確定清除所有打卡與成就紀錄？')){ store={checkins:{},reminds:{},achv:{},flags:{},gourmet:{}}; saveStore(); rebuildRoute(); updateAchvBadge(); toast('🗑️','已清除'); closeSheet(); } };
+}
+function openHelp(){
+  openSheet('❓ 使用說明',
+   `<div class="card"><h4>下面 5 個分頁</h4><ul>
+     <li>🧭 <b>現在</b>：依時刻推薦「現在去哪」＋人潮熱區</li>
+     <li>🍢 <b>屋台</b>：找最近的屋台，一鍵帶你去</li>
+     <li>🎆 <b>花火</b>：付費／免費／穴場觀賞點</li>
+     <li>🚉 <b>回程</b>：散場動線＋該避開的站</li>
+     <li>🗺️ <b>行程</b>：你的兩日個人行程與打卡</li></ul></div>
+    <div class="card"><h4>🧭 導航怎麼用</h4><p>任何據點按「帶我去」，地圖會畫出<b>藍色推薦步行路線</b>並列出逐段指引。這是<b>祭典特化</b>路線（已避開管制站、標註最佳動線），跟一般地圖不同。開左下 📍 定位可即時顯示剩餘距離、抵達自動打卡。</p></div>
+    <div class="card"><h4>🎮 邊玩邊逛</h4><ul>
+     <li>🎆 <b>花火倒數</b>：花火分頁頂端顯示距 19:30 還有多久</li>
+     <li>🍡 <b>屋台美食制覇</b>：屋台分頁打勾集點，集滿解鎖成就</li>
+     <li>💡 <b>冷知識</b>：⋯ 選單或點主要據點可翻天神祭雜學</li>
+     <li>🏅 <b>御朱印集章</b>：打卡行程/花火/屋台自動收集徽章</li></ul></div>
+    <div class="card"><h4>🕒 現在不是祭典日？</h4><p>今天若非 7/24–7/25，右上 ⋯ →「時間預覽」可跳到祭典時刻，體驗熱區變色、推薦、散場提醒、花火倒數等隨時間變化的功能。</p></div>`);
 }
 
 /* 花火結束 alert banner */
-let bannerShown=false, bannerDismissed=false;
+let bannerShown=false,bannerDismissed=false;
 function checkAlertBanner(){
-  const f=festClock(now());
-  const b=document.getElementById('alertBanner');
-  const inWindow = f.mo===7&&f.day===25&&f.hm>=20*60+50&&f.hm<=21*60+30;
-  if(inWindow && !bannerDismissed){
-    if(!bannerShown){
-      b.innerHTML=`<span style="font-size:1.3rem">🎆</span><div>花火結束！<b>原地等 15 分鐘</b>再走 → 往<b>京橋</b>，<b>勿衝桜ノ宮駅</b>。</div><span class="x" id="bx">✕</span>`;
-      b.classList.remove('hidden'); bannerShown=true;
-      document.getElementById('bx').onclick=()=>{ b.classList.add('hidden'); bannerDismissed=true; };
-    }
-  }else{ b.classList.add('hidden'); if(!inWindow) bannerShown=false; }
+  const f=festClock(now()); const b=document.getElementById('alertBanner');
+  const inWindow=f.mo===7&&f.day===25&&f.hm>=20*60+50&&f.hm<=21*60+30;
+  if(inWindow&&!bannerDismissed){ if(!bannerShown){ b.innerHTML=`<span style="font-size:1.3rem">🎆</span><div>花火結束！<b>原地等 15 分鐘</b>再走 → 往<b>京橋</b>，<b>勿衝桜ノ宮駅</b>。</div><span class="x" id="bx">✕</span>`; b.classList.remove('hidden'); bannerShown=true; document.getElementById('bx').onclick=()=>{ b.classList.add('hidden'); bannerDismissed=true; }; } }
+  else { b.classList.add('hidden'); if(!inWindow)bannerShown=false; }
 }
 
-/* ============================================================
-   時間模擬器
-   ============================================================ */
+/* =====================================================================
+   時間模擬（放進選單，精簡）
+   ===================================================================== */
 const SIM_PRESETS=[
-  {l:'即時',v:null},
-  {l:'7/24 17:00 屋台',v:[24,17,0]},
-  {l:'7/24 18:40 催太鼓',v:[24,18,40]},
-  {l:'7/24 19:30 散場',v:[24,19,30]},
-  {l:'7/25 14:00 尖峰前',v:[25,14,0]},
-  {l:'7/25 17:30 卡位',v:[25,17,30]},
-  {l:'7/25 19:30 花火',v:[25,19,30]},
-  {l:'7/25 20:55 散場',v:[25,20,55]},
+  {l:'即時',v:null},{l:'7/24 17:00 屋台',v:[24,17,0]},{l:'7/24 18:40 催太鼓',v:[24,18,40]},{l:'7/24 19:30 散場',v:[24,19,30]},
+  {l:'7/25 14:00 尖峰前',v:[25,14,0]},{l:'7/25 17:30 卡位',v:[25,17,30]},{l:'7/25 19:30 花火',v:[25,19,30]},{l:'7/25 20:55 散場',v:[25,20,55]},
 ];
-function simVal(){ if(!simOffset) return null; const f=festClock(new Date(simOffset)); return [f.day,f.h,f.m]; }
+function simVal(){ if(!simOffset)return null; const f=festClock(new Date(simOffset)); return [f.day,f.h,f.m]; }
 function openSim(){
-  const f = simOffset?festClock(new Date(simOffset)):null;
-  openSheet('🕒 時間模擬',
-   `<div id="simPanel">
-    <div class="info-block"><p>祭典在 7/24–7/25。今天可能還沒到，用模擬時間預覽「依時刻變化」的功能：熱區變色、目前任務、現在去哪推薦、花火結束提醒。</p></div>
+  const f=simOffset?festClock(new Date(simOffset)):null;
+  openSheet('🕒 時間預覽',
+   `<div class="card"><p>祭典在 7/24–7/25。用模擬時間預覽「依時刻變化」的功能：熱區變色、目前任務、現在去哪、花火結束提醒。</p></div>
     <div class="mini-h">快速跳到</div>
     <div class="simrow">${SIM_PRESETS.map((p,i)=>`<button class="simbtn ${JSON.stringify(p.v)===JSON.stringify(simVal())?'on':''}" data-i="${i}">${p.l}</button>`).join('')}</div>
     <div class="mini-h">微調（模擬中才可用）</div>
-    <div class="simrow">
-      <button class="simbtn ${f&&f.day===24?'on':''}" id="simDay24">7/24 宵宮</button>
-      <button class="simbtn ${f&&f.day===25?'on':''}" id="simDay25">7/25 本宮</button>
-    </div>
-    <div style="font-size:.9rem;text-align:center;font-weight:800;margin-top:4px" id="simTimeLbl">${f?pad(f.h)+':'+pad(f.m):'即時模式'}</div>
+    <div class="simrow"><button class="simbtn ${f&&f.day===24?'on':''}" id="simD24">7/24 宵宮</button><button class="simbtn ${f&&f.day===25?'on':''}" id="simD25">7/25 本宮</button></div>
+    <div style="text-align:center;font-weight:800;font-size:1rem" id="simLbl">${f?pad(f.h)+':'+pad(f.m):'即時模式'}</div>
     <input type="range" id="simSlider" min="0" max="1439" step="5" value="${f?f.hm:1050}" ${simOffset?'':'disabled'}>
-    <button class="chkbtn" id="simLive" style="width:100%;padding:11px;margin-top:6px;${simOffset?'':'background:var(--green);border-color:var(--green);color:#fff'}">${simOffset?'↩ 回到即時模式':'目前為即時模式'}</button>
-   </div>`);
-  document.querySelectorAll('.simbtn[data-i]').forEach(b=>b.onclick=()=>{ const p=SIM_PRESETS[+b.dataset.i]; if(p.v===null) setSimLive(); else setSim(p.v[0],p.v[1],p.v[2]); openSim(); });
-  document.getElementById('simDay24').onclick=()=>{ const c=simOffset?festClock(new Date(simOffset)):{h:17,m:0}; setSim(24,c.h,c.m); openSim(); };
-  document.getElementById('simDay25').onclick=()=>{ const c=simOffset?festClock(new Date(simOffset)):{h:17,m:0}; setSim(25,c.h,c.m); openSim(); };
-  const sl=document.getElementById('simSlider');
-  sl.oninput=()=>{ const c=simOffset?festClock(new Date(simOffset)):{day:25}; const v=+sl.value; setSim(c.day||25,Math.floor(v/60),v%60); document.getElementById('simTimeLbl').textContent=hm2str(v); };
+    <button class="bigbtn ${simOffset?'ghost':'primary'}" id="simLive" style="width:100%">${simOffset?'↩ 回到即時模式':'目前為即時模式'}</button>`);
+  document.querySelectorAll('.simbtn[data-i]').forEach(b=>b.onclick=()=>{ const p=SIM_PRESETS[+b.dataset.i]; if(p.v===null)setSimLive(); else setSim(p.v[0],p.v[1],p.v[2]); openSim(); });
+  document.getElementById('simD24').onclick=()=>{ const c=simOffset?festClock(new Date(simOffset)):{h:17,m:0}; setSim(24,c.h,c.m); openSim(); };
+  document.getElementById('simD25').onclick=()=>{ const c=simOffset?festClock(new Date(simOffset)):{h:17,m:0}; setSim(25,c.h,c.m); openSim(); };
+  const sl=document.getElementById('simSlider'); sl.oninput=()=>{ const c=simOffset?festClock(new Date(simOffset)):{day:25}; const v=+sl.value; setSim(c.day||25,Math.floor(v/60),v%60); document.getElementById('simLbl').textContent=hm2str(v); };
   document.getElementById('simLive').onclick=()=>{ setSimLive(); openSim(); };
 }
 function setSim(day,h,m){ simOffset=new Date(FEST_YEAR,6,day,h,m,0).getTime(); onTimeChanged(); }
 function setSimLive(){ simOffset=null; bannerDismissed=false; onTimeChanged(); }
-function onTimeChanged(){
-  const f=festClock(now());
-  if(isFestDayF(f)){ routeDay=f.day; updateRouteDayCtl(); }
-  updateTaskBar(); rebuildCrowd(); rebuildRoute(); checkAlertBanner();
-  if(fallbackMode) renderFallback();
-}
-function updateRouteDayCtl(){
-  document.querySelectorAll('#routeDayCtl button').forEach(b=>{
-    b.classList.toggle('on', String(routeDay)===b.dataset.rd);
-  });
-  document.getElementById('routeDayCtl').style.display = LAYERS.route.on?'flex':'none';
+function onTimeChanged(){ const f=festClock(now()); if(isFestDayF(f)){ routeDay=f.day; } updateTaskBar(); rebuildCrowd(); rebuildRoute(); checkAlertBanner(); if(fallbackMode)renderFallback(); }
+
+/* =====================================================================
+   Fallback 文字模式
+   ===================================================================== */
+function renderFallback(){
+  const f=festClock(now()); const r=recommend();
+  document.getElementById('fbContent').innerHTML=`
+    <div class="hero"><div class="kick">此刻最推薦（7/${f.day||'?'} ${pad(f.h)}:${pad(f.m)}）</div><div class="title">${r.title}</div><div class="why">${r.why}</div></div>
+    ${liveSnapshotHtml()}
+    <div class="card"><h4>🍢 屋台在哪</h4><ul><li><b>天神橋筋商店街</b>：密度最高</li><li><b>大川東岸</b>：可邊吃邊看花火</li><li><b>南天滿公園</b>：較緩和</li></ul></div>
+    <div class="card"><h4>🚉 回程</h4><ul><li><span class="pill" style="background:${SSTAT.avoid.c}">避</span> 南森町、桜ノ宮</li><li><span class="pill" style="background:${SSTAT.best.c}">推</span> 京橋、北浜／淀屋橋</li></ul></div>`;
 }
 
-/* ============================================================
+/* =====================================================================
    Toast
-   ============================================================ */
+   ===================================================================== */
 let toastT=null;
-function toast(em,msg){
-  const t=document.getElementById('toast');
-  t.innerHTML=`<span class="em">${em}</span>${msg}`;
-  t.classList.add('show');
-  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2600);
-}
+function toast(em,msg){ const t=document.getElementById('toast'); t.innerHTML=`<span class="em">${em}</span>${msg}`; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2600); }
 
-/* ============================================================
-   我的路線 sheet
-   ============================================================ */
-function openRouteSheet(){
-  openSheet('🧭 我的路線',
-   `<div class="mini-h">7/24（五）宵宮</div>
-    ${ROUTE.filter(r=>r.d===24).map(routeItemHtml).join('')}
-    <div class="mini-h">7/25（六）本宮</div>
-    ${ROUTE.filter(r=>r.d===25).map(routeItemHtml).join('')}`);
-  bindRouteItems();
-}
-function routeItemHtml(r){
-  const done=isChecked(r.id); const idx=currentRouteIndex(); const isNow=ROUTE[idx]&&ROUTE[idx].id===r.id;
-  return `<div class="route-item ${isNow?'now':''} ${done?'done':''}" data-id="${r.id}">
-    <div class="rtime">${r.t}</div>
-    <div class="rmain"><div class="rt">${r.title}</div><div class="rd">${r.desc}</div></div>
-    <div class="rchk"><button class="chkbtn ${done?'done':''}" data-chk="${r.id}">${done?'✓':'打卡'}</button></div>
-  </div>`;
-}
-function bindRouteItems(){
-  document.querySelectorAll('[data-chk]').forEach(b=>b.onclick=(e)=>{
-    e.stopPropagation(); const id=b.dataset.chk; const nv=!isChecked(id); setCheck(id,nv);
-    b.classList.toggle('done',nv); b.textContent=nv?'✓':'打卡';
-    if(nv){toast('✓','已打卡');checkAchievements();} rebuildRoute(); if(fallbackMode)renderFallback();
-  });
-  document.querySelectorAll('.route-item').forEach(el=>el.onclick=()=>{
-    const r=ROUTE.find(x=>x.id===el.dataset.id); const i=ROUTE.indexOf(r);
-    if(!fallbackMode&&map){ closeSheet(); map.flyTo([r.lat,r.lng],16); setTimeout(()=>openRoutePoint(r,i),350); }
-    else openRoutePoint(r,i);
-  });
-}
+function checkAchievements(){ if(!store.achv)store.achv={}; ACHV.forEach(a=>{ if(achvGot(a)&&!store.achv[a.id]){ store.achv[a.id]=1; saveStore(); toast(a.emoji,'成就達成：'+a.name); } }); updateAchvBadge(); }
 
-/* ============================================================
+/* =====================================================================
    綁定 & 啟動
-   ============================================================ */
-document.getElementById('fabWhere').onclick=openRecommend;
+   ===================================================================== */
 document.getElementById('fabGps').onclick=toggleGps;
-document.getElementById('fabRoute').onclick=openRouteSheet;
-document.getElementById('btnSim').onclick=openSim;
-document.getElementById('btnRemind').onclick=openRemind;
 document.getElementById('btnAchv').onclick=openAchv;
-document.getElementById('fbRetry').onclick=()=>{ exitFallback(); if(tileLayer) tileLayer.redraw(); };
+document.getElementById('btnMenu').onclick=openMenu;
+document.getElementById('fbRetry').onclick=()=>{ exitFallback(); if(tileLayer)tileLayer.redraw(); };
 
-// 路線日切換
-document.querySelectorAll('#routeDayCtl button').forEach(b=>b.onclick=()=>{
-  routeDay = b.dataset.rd==='both'?'both':(+b.dataset.rd);
-  if(!LAYERS.route.on){ LAYERS.route.on=true; applyLayerVisibility(); buildLayerChips(); }
-  updateRouteDayCtl(); rebuildRoute();
-});
-
-buildLayerChips();
-// 依今天（或即時）預設路線日
 (function(){ const f=festClock(now()); routeDay=(f.mo===7&&f.day===25)?25:24; })();
+buildTabbar();
 initMap();
-updateRouteDayCtl();
 updateTaskBar();
+updateAchvBadge();
 checkAlertBanner();
 
-setInterval(()=>{ updateTaskBar(); }, 15000);
-setInterval(()=>{ if(!simOffset){ rebuildCrowd(); rebuildRoute(); checkAlertBanner(); if(fallbackMode)renderFallback(); } }, 60000);
+setInterval(()=>{ updateTaskBar(); if(navSession)showNavBanner(); },15000);
+setInterval(()=>{ if(!simOffset){ rebuildCrowd(); rebuildRoute(); checkAlertBanner(); if(fallbackMode)renderFallback(); } },60000);
 
-setTimeout(()=>{ if(!localStorage.getItem(LS_KEY+'_seen')){ toast('⛩️','歡迎！點下方圖層開關切換情報，右下「現在去哪」看即時建議'); localStorage.setItem(LS_KEY+'_seen','1'); } },1400);
+setTimeout(()=>{ if(!localStorage.getItem(LS_KEY+'_seen')){ toast('⛩️','歡迎！下方 5 分頁切換情報，任何據點按「帶我去」就會畫出推薦路線'); localStorage.setItem(LS_KEY+'_seen','1'); } },1400);
+
+// 導出給 inline onclick 使用
+window.navTo=navTo;
+window.openGourmet=openGourmet;
 </script>
 </body>
 </html>
