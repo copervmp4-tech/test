@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f2f1f6">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="天神祭">
 <title>大阪天神祭 · 祭典導航</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
@@ -972,6 +979,12 @@ function toggleGps(){
   if(gpsWatch){ navigator.geolocation.clearWatch(gpsWatch); gpsWatch=null; btn.classList.remove('active'); if(gpsMarker&&map)map.removeLayer(gpsMarker); gpsMarker=null; gpsLatLng=null; gpsCentered=false; toast('📍','已關閉定位'); return; }
   if(!navigator.geolocation){ toast('⚠️','此裝置不支援定位，可手動打卡'); return; }
   if(!window.isSecureContext){ gpsHelp('insecure'); return; }
+  // Chrome 對曾拒絕過的網站會「靜默封鎖」不再跳詢問視窗 — 先查權限狀態直接給解法
+  if(navigator.permissions&&navigator.permissions.query){
+    navigator.permissions.query({name:'geolocation'}).then(st=>{
+      if(st.state==='denied'){ btn.classList.remove('active'); gpsHelp(inAppBrowser()?'inapp':'denied'); }
+    }).catch(()=>{});
+  }
   btn.classList.add('active'); toast('📡','定位中…請允許位置權限');
   navigator.geolocation.getCurrentPosition(pos=>{ gpsLatLng={lat:pos.coords.latitude,lng:pos.coords.longitude}; placeGps(); startWatch(); },err=>{ btn.classList.remove('active'); gpsError(err); },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
@@ -982,7 +995,11 @@ function gpsHelp(kind){
   let head;
   if(kind==='inapp')head=`<div class="card" style="border-color:var(--gold)"><h4>📲 你可能在 App 內建瀏覽器開啟</h4><p>在 LINE／IG／FB 等 App 內開網頁時，系統會直接擋掉定位。</p><p style="margin-top:6px;color:var(--text)"><b>解法：</b>點右上「⋯」→「在 Safari / Chrome 開啟」，再按一次定位。</p></div>`;
   else if(kind==='insecure')head=`<div class="card" style="border-color:var(--gold)"><h4>🔒 需要 https 網頁</h4><p>目前網址不是 https，瀏覽器會禁止定位。請用 GitHub Pages 的 https 網址開啟。</p></div>`;
-  else head=`<div class="card" style="border-color:var(--gold)"><h4>📍 定位被系統擋住</h4><ul style="margin-top:6px"><li><b>iOS</b>：設定 → 隱私 → 定位服務 → 開啟，Safari 設「使用期間」</li><li><b>網站權限</b>：網址列旁 ⓐＡ → 網站設定 → 位置 → 允許，重新整理</li><li><b>Android</b>：⋮ → 設定 → 網站設定 → 位置 → 允許</li></ul></div>`;
+  else head=`<div class="card" style="border-color:var(--gold)"><h4>📍 定位被封鎖（沒跳詢問視窗＝之前拒絕過，瀏覽器會記住並靜默封鎖）</h4><ul style="margin-top:6px">
+    <li><b>Chrome（Android）</b>：網址列左邊 🔒/⚙ → 權限 → 位置 → 改「允許」→ 重新整理。若選項是灰的：手機 設定 → 應用程式 → Chrome → 權限 → 位置 → 允許</li>
+    <li><b>Chrome（iOS）</b>：iPhone 設定 → Chrome → 位置 → 「使用 App 期間」</li>
+    <li><b>iOS Safari</b>：設定 → 隱私權 → 定位服務 → 開啟，Safari 設「使用 App 期間」</li>
+    <li>改完後回來<b>重新整理頁面</b>，再按一次 📍</li></ul></div>`;
   openSheet('📍 定位無法使用',head+common);
 }
 function placeGps(){
@@ -1016,13 +1033,15 @@ function openRemind(){
 }
 function openMenu(){
   openSheet('⋯ 更多',
-   `<div class="menu-item" id="mSim"><span class="mi">🕒</span>時間預覽（模擬祭典時刻）<span class="ch">›</span></div>
+   `<div class="menu-item" id="mInstall"><span class="mi">📲</span>加到主畫面（App 模式）<span class="ch">›</span></div>
+    <div class="menu-item" id="mSim"><span class="mi">🕒</span>時間預覽（模擬祭典時刻）<span class="ch">›</span></div>
     <div class="menu-item" id="mRemind"><span class="mi">🎒</span>出門清單<span class="ch">›</span></div>
     <div class="menu-item" id="mAchv"><span class="mi">🏅</span>御朱印集章<span class="ch">›</span></div>
     <div class="menu-item" id="mGourmet"><span class="mi">🍡</span>屋台美食制覇<span class="ch">›</span></div>
     <div class="menu-item" id="mTrivia"><span class="mi">💡</span>天神祭 冷知識<span class="ch">›</span></div>
     <div class="menu-item" id="mHelp"><span class="mi">❓</span>使用說明<span class="ch">›</span></div>
     <div class="menu-item" id="mReset"><span class="mi" style="color:var(--red)">🗑️</span><span style="color:var(--red)">重置所有打卡紀錄</span></div>`);
+  document.getElementById('mInstall').onclick=openInstall;
   document.getElementById('mSim').onclick=openSim;
   document.getElementById('mRemind').onclick=openRemind;
   document.getElementById('mAchv').onclick=openAchv;
@@ -1046,6 +1065,25 @@ function openHelp(){
      <li>💡 <b>冷知識</b>：⋯ 選單或點主要據點可翻天神祭雜學</li>
      <li>🏅 <b>御朱印集章</b>：打卡行程/花火/屋台自動收集徽章</li></ul></div>
     <div class="card"><h4>🕒 現在不是祭典日？</h4><p>今天若非 7/24–7/25，右上 ⋯ →「時間預覽」可跳到祭典時刻，體驗熱區變色、推薦、散場提醒、花火倒數等隨時間變化的功能。</p></div>`);
+}
+
+/* ---------- 加到主畫面（PWA 安裝） ---------- */
+let deferredInstall=null;
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredInstall=e; });
+function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true; }
+function openInstall(){
+  if(isStandalone()){ openSheet('📲 加到主畫面',`<div class="card" style="border-color:var(--green)"><h4>✅ 已是 App 模式</h4><p style="color:var(--text)">你已從主畫面圖示開啟，全螢幕運行。程式與看過的地圖區域會自動離線快取，現場網路壅塞時也更穩。</p></div>`); return; }
+  const ios=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  const inapp=inAppBrowser();
+  let html='';
+  if(inapp) html+=`<div class="card" style="border-color:var(--red)"><h4>⚠️ 你在 App 內建瀏覽器中</h4><p style="color:var(--text)">LINE／IG／FB 內開的網頁無法加到主畫面。請先點右上「⋯」→「用 Safari / Chrome 開啟」再回到這裡。</p></div>`;
+  if(deferredInstall) html+=`<div class="hero"><div class="kick">一鍵安裝</div><div class="title">把祭典導航裝到桌面</div><div class="why">全螢幕開啟、桌面圖示直達；程式與地圖會離線快取，祭典現場網路塞爆也能用。</div><div class="acts"><button class="bigbtn primary" id="pwaGo">📲 立即安裝</button></div></div>`;
+  html+=`<div class="card"><h4>🍎 iPhone / iPad（Safari）</h4><ul><li><b>1.</b> 底部中間 <b>分享</b> 按鈕（□↑）</li><li><b>2.</b> 往下捲，點「<b>加入主畫面</b>」</li><li><b>3.</b> 右上「加入」— 桌面出現 ⛩️ 圖示</li></ul></div>
+    <div class="card"><h4>🤖 Android（Chrome）</h4><ul><li><b>1.</b> 右上「<b>⋮</b>」選單</li><li><b>2.</b> 點「<b>加到主畫面</b>」或「<b>安裝應用程式</b>」</li><li><b>3.</b> 確認 — 桌面出現 ⛩️ 圖示</li></ul></div>
+    <div class="card"><h4>裝了有什麼好處</h4><ul><li>全螢幕、無網址列，像原生 App</li><li>程式本體＋看過的地圖離線快取（現場網路壅塞救星）</li><li>祭典當天從桌面一鍵開啟</li></ul></div>`;
+  openSheet('📲 加到主畫面',html);
+  const go=document.getElementById('pwaGo');
+  if(go)go.onclick=async()=>{ if(!deferredInstall)return; deferredInstall.prompt(); const r=await deferredInstall.userChoice.catch(()=>null); if(r&&r.outcome==='accepted'){ toast('🎉','已安裝到桌面！'); closeSheet(); } deferredInstall=null; };
 }
 
 /* 花火結束 alert banner */
@@ -1110,6 +1148,7 @@ function checkAchievements(){ if(!store.achv)store.achv={}; ACHV.forEach(a=>{ if
    綁定 & 啟動
    ===================================================================== */
 document.getElementById('fabGps').onclick=toggleGps;
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
 document.getElementById('btnAchv').onclick=openAchv;
 document.getElementById('btnMenu').onclick=openMenu;
 document.getElementById('fbRetry').onclick=()=>{ exitFallback(); if(tileLayer)tileLayer.redraw(); };
