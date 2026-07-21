@@ -12,14 +12,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="天神祭">
 <title>大阪天神祭 · 祭典導航</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="leaflet/leaflet.css"/>
 <style>
 /* ============ Base ============ */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
   --bg:#f2f1f6; --surface:#ffffff; --surface2:#ffffff; --line:rgba(60,60,67,.12);
   --text:#1c1c1e; --muted:#6d6d72;
-  --accent:#ff5a36; --gold:#b8720a;
+  --accent:#24407c; --gold:#b8720a;
   --green:#34c759; --yellow:#ffcc33; --red:#ff3b30; --blue:#007aff;
   --route:#3dd7ee;
   /* ── glass materials（iOS 淺色系統材質） ── */
@@ -55,7 +55,7 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 }
 #topbar .row1{display:flex;align-items:center;gap:10px}
 #clock{font-variant-numeric:tabular-nums;font-weight:800;font-size:1.2rem;letter-spacing:.5px;white-space:nowrap}
-#clock .day{font-size:.68rem;color:var(--gold);font-weight:700;margin-left:5px;background:rgba(184,114,10,.12);padding:2px 6px;border-radius:6px}
+#clock .day{font-size:.72rem;color:var(--gold);font-weight:700;margin-left:5px;background:rgba(184,114,10,.12);padding:2px 6px;border-radius:6px}
 #topRight{margin-left:auto;display:flex;gap:7px;align-items:center}
 .tbtn{height:38px;padding:0 12px;border-radius:19px;background:var(--pane);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);border:1px solid var(--hair);box-shadow:var(--hi);display:flex;align-items:center;gap:6px;font-size:.84rem;font-weight:700;color:var(--text);transition:transform .12s var(--spring)}
 .tbtn svg{width:19px;height:19px}
@@ -67,7 +67,7 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
   border:1px solid var(--hair); border-radius:15px;
   padding:9px 13px; font-size:.82rem; box-shadow:var(--shadow),var(--hi);
 }
-#taskChip .tg{font-size:.6rem;background:var(--accent);color:#fff;padding:3px 8px;border-radius:7px;font-weight:800;flex-shrink:0;letter-spacing:.5px}
+#taskChip .tg{font-size:.66rem;background:var(--accent);color:#fff;padding:3px 8px;border-radius:7px;font-weight:800;flex-shrink:0;letter-spacing:.5px}
 #taskChip .tx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 #taskChip .cd{flex-shrink:0;color:var(--gold);font-weight:800;font-variant-numeric:tabular-nums;font-size:.78rem}
 
@@ -88,11 +88,14 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 .route-dot{width:27px;height:27px;border-radius:50%;background:var(--route);border:3px solid #fff;color:#04222b;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.30)}
 .route-dot.active{background:var(--accent);color:#fff;animation:pulse 1.6s infinite}
 .route-dot.done{background:var(--green);color:#fff}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(240,81,47,.6)}70%{box-shadow:0 0 0 15px rgba(240,81,47,0)}100%{box-shadow:0 0 0 0 rgba(240,81,47,0)}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(80,120,200,.6)}70%{box-shadow:0 0 0 15px rgba(80,120,200,0)}100%{box-shadow:0 0 0 0 rgba(80,120,200,0)}}
 .gps-dot{width:18px;height:18px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 7px rgba(0,122,255,.20),0 2px 6px rgba(0,0,0,.32)}
+.gps-wrap{position:relative;width:56px;height:56px;display:flex;align-items:center;justify-content:center}
+.gps-cone{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from -32deg at 50% 50%,rgba(0,122,255,.42) 0deg,rgba(0,122,255,.14) 56deg,transparent 64deg);opacity:0;transition:opacity .3s}
+.gps-cone.on{opacity:1}
 .nav-end{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--accent);border:3px solid #fff;box-shadow:0 2px 9px rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center}
 .nav-end span{transform:rotate(45deg);font-size:15px}
-.zlabel{background:rgba(255,255,255,.92);color:#1c1c1e;font-size:10px;font-weight:800;padding:2px 7px;border-radius:11px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.22);border:1px solid rgba(0,0,0,.08)}
+.zlabel{background:rgba(255,255,255,.92);color:#1c1c1e;font-size:11px;font-weight:800;padding:2px 7px;border-radius:11px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.22);border:1px solid rgba(0,0,0,.08)}
 
 /* ============ Nav banner (during navigation) ============ */
 #navBanner{
@@ -108,7 +111,7 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 #navBanner .ar svg{width:26px;height:26px}
 #navBanner .mid{flex:1;min-width:0}
 #navBanner .mid .to{font-weight:800;font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#navBanner .mid .meta{font-size:.76rem;opacity:.92;margin-top:1px}
+#navBanner .mid .meta{font-size:.8rem;opacity:.92;margin-top:1px}
 #navBanner .stop{flex-shrink:0;background:rgba(255,255,255,.2);border-radius:10px;padding:8px 11px;font-size:.78rem;font-weight:800}
 
 /* ============ Bottom tab bar ============ */
@@ -120,7 +123,7 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
   border-top:1px solid var(--hair); box-shadow:0 -1px 0 rgba(255,255,255,.05),var(--shadow);
   display:flex; align-items:stretch;
 }
-.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);font-size:.66rem;font-weight:700;position:relative;transition:color .18s}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);font-size:.72rem;font-weight:700;position:relative;transition:color .18s}
 .tab .ic{width:25px;height:25px;display:flex;align-items:center;justify-content:center;opacity:.66;transition:transform .22s var(--spring),opacity .18s}
 .tab .ic svg{width:25px;height:25px}
 .tab.on{color:var(--gold)}
@@ -131,10 +134,10 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 /* ============ Floating CTA + GPS ============ */
 #ctaWrap{position:fixed;left:0;right:0;bottom:calc(var(--tabbar-h) + var(--safe-bot) + 12px);z-index:1140;display:flex;justify-content:center;pointer-events:none;padding:0 14px}
 #ctaBtn{
-  pointer-events:auto; background:linear-gradient(180deg,#ff6f4b,#f0451f); color:#fff;
+  pointer-events:auto; background:linear-gradient(180deg,#31549c,#1d3568); color:#fff;
   padding:15px 24px; border-radius:32px; font-weight:800; font-size:.95rem;
-  border:1px solid rgba(255,255,255,.18);
-  box-shadow:0 12px 34px rgba(240,69,31,.5),var(--hi); display:flex; align-items:center; gap:8px;
+  border:1px solid rgba(224,190,90,.40);
+  box-shadow:0 12px 34px rgba(29,53,104,.45),var(--hi); display:flex; align-items:center; gap:8px;
   max-width:100%; transition:transform .14s var(--spring);
 }
 #ctaBtn svg{width:18px;height:18px}
@@ -173,35 +176,35 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 .card ul{list-style:none;margin-top:5px}
 .card li{padding:4px 0}
 .card li b{color:var(--text)}
-.badge{font-size:.62rem;padding:3px 9px;border-radius:20px;font-weight:800;color:#fff}
-.pill{display:inline-block;font-size:.64rem;padding:2px 8px;border-radius:20px;font-weight:800;margin:2px 3px 0 0;color:#fff}
+.badge{font-size:.68rem;padding:3px 9px;border-radius:20px;font-weight:800;color:#fff}
+.pill{display:inline-block;font-size:.7rem;padding:2px 8px;border-radius:20px;font-weight:800;margin:2px 3px 0 0;color:#fff}
 
-.hero{background:linear-gradient(135deg,rgba(255,90,54,.10),rgba(255,255,255,.40));border:1px solid rgba(255,90,54,.35);border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 12px 34px rgba(255,90,54,.10),var(--hi)}
-.hero .kick{font-size:.66rem;color:var(--gold);letter-spacing:2px;font-weight:800;text-transform:uppercase}
+.hero{background:linear-gradient(135deg,rgba(36,64,124,.08),rgba(255,255,255,.40));border:1px solid rgba(36,64,124,.30);border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 12px 34px rgba(36,64,124,.10),var(--hi)}
+.hero .kick{font-size:.7rem;color:var(--gold);letter-spacing:2px;font-weight:800;text-transform:uppercase}
 .hero .title{font-size:1.36rem;font-weight:800;color:var(--text);margin-top:5px;line-height:1.3;letter-spacing:-.01em}
 .hero .why{font-size:.84rem;color:var(--muted);margin-top:7px}
 .hero .acts{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}
 .bigbtn{flex:1;min-width:120px;text-align:center;padding:13px;border-radius:14px;font-weight:800;font-size:.87rem;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .14s var(--spring)}
-.bigbtn.primary{background:linear-gradient(180deg,#ff6f4b,#f0451f);color:#fff;box-shadow:0 6px 18px rgba(240,69,31,.4),var(--hi)}
+.bigbtn.primary{background:linear-gradient(180deg,#31549c,#1d3568);color:#fff;border:1px solid rgba(224,190,90,.35);box-shadow:0 6px 18px rgba(29,53,104,.40),var(--hi)}
 .bigbtn.ghost{background:var(--card);border:1px solid var(--hair);color:var(--text);box-shadow:var(--hi)}
 .bigbtn:active{transform:scale(.95)}
 
 /* list rows */
 .row{display:flex;gap:11px;align-items:center;background:var(--card);border:1px solid var(--hair);border-radius:15px;padding:12px;margin-bottom:9px;box-shadow:var(--hi)}
-.row.now{border-color:rgba(255,90,54,.45);background:linear-gradient(135deg,rgba(255,90,54,.09),rgba(255,255,255,.35))}
+.row.now{border-color:rgba(36,64,124,.40);background:linear-gradient(135deg,rgba(36,64,124,.07),rgba(255,255,255,.35))}
 .row.done{opacity:.5}
 .row .lead{width:44px;flex-shrink:0;text-align:center;font-weight:800;font-size:.8rem;color:var(--gold);font-variant-numeric:tabular-nums}
 .row .lead .em{font-size:1.4rem}
 .row .body{flex:1;min-width:0}
 .row .body .t{font-weight:700;font-size:.9rem}
-.row .body .d{font-size:.77rem;color:var(--muted);margin-top:2px}
+.row .body .d{font-size:.8rem;color:var(--muted);margin-top:2px}
 .row .go{flex-shrink:0}
-.gobtn{background:var(--blue);color:#fff;border-radius:12px;padding:9px 13px;font-size:.76rem;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(10,132,255,.35)}
+.gobtn{background:var(--blue);color:#fff;border-radius:12px;padding:9px 13px;font-size:.78rem;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(10,132,255,.35)}
 .gobtn.ghost{background:var(--card);border:1px solid var(--hair);color:var(--muted);box-shadow:none}
-.chkbtn{background:var(--card);border:1px solid var(--hair);border-radius:20px;padding:8px 14px;font-size:.74rem;font-weight:800;color:var(--muted);white-space:nowrap}
+.chkbtn{background:var(--card);border:1px solid var(--hair);border-radius:20px;padding:8px 14px;font-size:.78rem;font-weight:800;color:var(--muted);white-space:nowrap}
 .chkbtn.done{background:var(--green);border-color:var(--green);color:#fff}
 
-.mini-h{font-size:.7rem;color:var(--muted);letter-spacing:1px;font-weight:700;margin:16px 0 8px}
+.mini-h{font-size:.78rem;color:var(--muted);letter-spacing:1px;font-weight:700;margin:16px 0 8px}
 
 /* nav steps */
 .navtot{background:linear-gradient(135deg,rgba(0,122,255,.12),rgba(255,255,255,.40));border:1px solid rgba(0,122,255,.35);border-radius:18px;padding:16px;margin-bottom:14px;text-align:center;box-shadow:0 10px 30px rgba(0,122,255,.10),var(--hi)}
@@ -215,8 +218,8 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 .step .num.fin{background:var(--accent)}
 .step .sbody{flex:1;min-width:0}
 .step .sbody .st{font-weight:700;font-size:.87rem}
-.step .sbody .sm{font-size:.76rem;color:var(--muted);margin-top:2px}
-.step .sbody .warn{font-size:.76rem;color:var(--gold);margin-top:3px;font-weight:600}
+.step .sbody .sm{font-size:.8rem;color:var(--muted);margin-top:2px}
+.step .sbody .warn{font-size:.8rem;color:var(--gold);margin-top:3px;font-weight:600}
 
 /* achievements */
 .achv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -225,7 +228,7 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 .achv .emoji{font-size:2rem;filter:grayscale(1);opacity:.35}
 .achv.got .emoji{filter:none;opacity:1}
 .achv .an{font-size:.82rem;font-weight:800;margin-top:6px}
-.achv .ad{font-size:.66rem;color:var(--muted);margin-top:3px;line-height:1.35}
+.achv .ad{font-size:.72rem;color:var(--muted);margin-top:3px;line-height:1.35}
 .progwrap{background:var(--card);border:1px solid var(--hair);border-radius:15px;padding:14px 16px;margin-bottom:13px;box-shadow:var(--hi)}
 .progbar{height:9px;background:rgba(120,120,128,.18);border-radius:9px;overflow:hidden;margin-top:8px}
 .progbar .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:9px;transition:.4s}
@@ -239,8 +242,8 @@ button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:n
 
 /* sim */
 .simrow{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
-.simbtn{flex:1;min-width:88px;background:var(--card);border:1px solid var(--hair);border-radius:12px;padding:11px 6px;font-size:.74rem;font-weight:700;text-align:center;box-shadow:var(--hi)}
-.simbtn.on{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 5px 14px rgba(255,90,54,.35)}
+.simbtn{flex:1;min-width:88px;background:var(--card);border:1px solid var(--hair);border-radius:12px;padding:11px 6px;font-size:.78rem;font-weight:700;text-align:center;box-shadow:var(--hi)}
+.simbtn.on{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 5px 14px rgba(36,64,124,.35)}
 input[type=range]{width:100%;accent-color:var(--accent);margin:10px 0}
 
 /* menu list */
@@ -258,6 +261,35 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:10px 0}
 #fallback{position:absolute;top:0;bottom:0;left:0;right:0;z-index:5;background:var(--bg);overflow-y:auto;padding:calc(var(--safe-top) + 120px) 0 calc(var(--tabbar-h) + 120px);-webkit-overflow-scrolling:touch}
 #fallback .fb-inner{padding:14px}
 #fallback .fb-note{background:var(--surface2);border:1px solid var(--accent);border-radius:12px;padding:11px 13px;font-size:.8rem;color:var(--gold);margin-bottom:13px}
+
+/* ============ 深色模式（19:00–06:00 自動，或手動切換） ============ */
+html.dark{
+  --bg:#0b0a0f; --surface:#16151c; --surface2:#1f1e27; --line:rgba(255,255,255,.09);
+  --text:#f3f1f6; --muted:#9d99ab;
+  --accent:#5f83cf; --gold:#ffc24d;
+  --red:#ff453a; --blue:#0a84ff;
+  --pane:rgba(24,23,30,.62); --pane-strong:rgba(18,17,24,.80);
+  --card:rgba(255,255,255,.045); --hair:rgba(255,255,255,.10);
+  --hi:inset 0 1px 0 rgba(255,255,255,.10);
+  --shadow:0 8px 30px rgba(0,0,0,.55); --shadow-lg:0 22px 55px rgba(0,0,0,.62);
+}
+html.dark #topbar{background:linear-gradient(180deg,rgba(11,10,15,.78),rgba(11,10,15,.28) 82%,rgba(11,10,15,0))}
+html.dark #clock .day{background:rgba(255,194,77,.13)}
+html.dark #map,html.dark .leaflet-container{background:#0b0a0f}
+html.dark .leaflet-control-attribution{background:rgba(15,12,11,.7)!important}
+html.dark .zlabel{background:rgba(30,26,24,.9);color:#fff;border-color:rgba(255,255,255,.15)}
+html.dark #sheetMask{background:rgba(0,0,0,.55)}
+html.dark #sheet .grip{background:rgba(255,255,255,.22)}
+html.dark .hero{background:linear-gradient(135deg,rgba(95,131,207,.16),rgba(255,255,255,.03));border-color:rgba(95,131,207,.45);box-shadow:0 12px 34px rgba(0,0,0,.35),var(--hi)}
+html.dark .hero .title{color:#fff}
+html.dark .row.now{border-color:rgba(95,131,207,.5);background:linear-gradient(135deg,rgba(95,131,207,.13),rgba(255,255,255,.03))}
+html.dark .navtot{background:linear-gradient(135deg,rgba(10,132,255,.20),rgba(255,255,255,.03));border-color:rgba(10,132,255,.5);box-shadow:0 10px 30px rgba(10,132,255,.14),var(--hi)}
+html.dark .navtot .big{color:#fff}
+html.dark .navtot .sub{color:#b9d4f2}
+html.dark .achv.got{border-color:rgba(255,194,77,.55);background:linear-gradient(135deg,rgba(255,194,77,.16),rgba(255,255,255,.03))}
+html.dark .progbar{background:rgba(0,0,0,.35)}
+html.dark #toast{border-color:rgba(255,194,77,.5)}
+html.dark .tab.on::before{box-shadow:0 0 10px rgba(255,194,77,.6)}
 </style>
 </head>
 <body>
@@ -268,6 +300,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:10px 0}
     <div id="clock">--:--<span class="day"></span></div>
     <div id="topRight">
       <button class="tbtn" id="btnAchv" title="集章"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9.5" r="4.8"/><path d="M8.6 13.6L7 21l5-2.6L17 21l-1.6-7.4"/></svg><span class="n" id="achvN">0</span></button>
+      <button class="tbtn" id="btnTheme" title="外觀"><span id="themeIc">🌗</span></button>
       <button class="tbtn" id="btnMenu" title="更多"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5.5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18.5" cy="12" r="1.5"/></svg></button>
     </div>
   </div>
@@ -307,7 +340,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:10px 0}
 <!-- TOAST -->
 <div id="toast"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="leaflet/leaflet.js"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -343,6 +376,26 @@ function isFestDay(d){ return isFestDayF(festClock(d)); }
 function pad(n){return String(n).padStart(2,'0')}
 function hm2str(h){return pad(Math.floor(h/60))+':'+pad(h%60)}
 function toMin(s){const [h,m]=s.split(':').map(Number);return h*60+m}
+
+/* ---------- 外觀主題（自動：19:00–06:00 深色；地圖圖磚跟著換） ---------- */
+const TILE_STYLES={light:'rastertiles/voyager',dark:'dark_all'};
+function tileUrl(style){ return 'https://{s}.basemaps.cartocdn.com/'+style+'/{z}/{x}/{y}{r}.png'; }
+let themeMode=localStorage.getItem('tenjinTheme')||'auto';
+let appliedTheme=null;
+function effTheme(){ if(themeMode!=='auto')return themeMode; const h=now().getHours(); return (h>=19||h<6)?'dark':'light'; }
+function applyTheme(){
+  const t=effTheme(); if(t===appliedTheme)return; appliedTheme=t;
+  document.documentElement.classList.toggle('dark',t==='dark');
+  const m=document.querySelector('meta[name=theme-color]'); if(m)m.content=t==='dark'?'#0b0a0f':'#f2f1f6';
+  if(typeof tileLayer!=='undefined'&&tileLayer)tileLayer.setUrl(tileUrl(TILE_STYLES[t]));
+}
+function updateThemeBtn(){ const el=document.getElementById('themeIc'); if(el)el.textContent=themeMode==='auto'?'🌗':themeMode==='light'?'☀️':'🌙'; }
+function cycleTheme(){
+  themeMode=themeMode==='auto'?'light':themeMode==='light'?'dark':'auto';
+  try{localStorage.setItem('tenjinTheme',themeMode);}catch(e){}
+  appliedTheme=null; applyTheme(); updateThemeBtn();
+  toast(themeMode==='auto'?'🌗':themeMode==='light'?'☀️':'🌙','外觀：'+(themeMode==='auto'?'自動（晚上 7 點自動深色）':themeMode==='light'?'固定淺色':'固定深色'));
+}
 
 /* =====================================================================
    資料層（沿用你手工整理的據點資料）
@@ -582,6 +635,7 @@ function anyCheckedPrefix(pre){ return Object.keys(store.checkins).some(k=>k.ind
    地圖
    ===================================================================== */
 let map,tileLayer,fallbackMode=false,gpsMarker=null,gpsLatLng=null,gpsWatch=null,gpsCentered=false;
+let followMode=false;         // 導航中地圖跟著藍點移動（拖曳地圖即取消）
 let routeDay=24;
 const FEST_CENTER={lat:34.6985,lng:135.5175};
 const mLayers={};             // 情報圖層
@@ -594,7 +648,7 @@ const LAYER_KEYS=['matsuri','yatai','hanabi','station','crowd','route'];
 function initMap(){
   try{
     map=L.map('map',{zoomControl:false,attributionControl:true,tap:true}).setView([34.6985,135.5165],14);
-    tileLayer=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:20,minZoom:11,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO',crossOrigin:true});
+    tileLayer=L.tileLayer(tileUrl(TILE_STYLES[effTheme()]),{maxZoom:20,minZoom:11,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO',crossOrigin:true});
     let tileErrors=0,tileOk=false;
     tileLayer.on('tileerror',()=>{ tileErrors++; if(!tileOk&&tileErrors>=4)enterFallback(); });
     tileLayer.on('tileload',()=>{ tileOk=true; });
@@ -603,6 +657,7 @@ function initMap(){
     LAYER_KEYS.forEach(k=>mLayers[k]=L.layerGroup().addTo(map));
     navLayer=L.layerGroup().addTo(map);
     buildStaticMarkers(); rebuildCrowd(); rebuildRoute();
+    map.on('dragstart',()=>{ followMode=false; });
     applyTab();
   }catch(e){ enterFallback(); }
 }
@@ -610,10 +665,11 @@ function enterFallback(){ if(fallbackMode)return; fallbackMode=true; document.ge
 function exitFallback(){ fallbackMode=false; document.getElementById('fallback').classList.add('hidden'); if(map)setTimeout(()=>map.invalidateSize(),120); }
 
 function divPin(color,emoji,size){ size=size||26; return L.divIcon({className:'',html:`<div class="pin" style="background:${color};width:${size}px;height:${size}px"><span>${emoji}</span></div>`,iconSize:[size,size],iconAnchor:[size/2,size],popupAnchor:[0,-size]}); }
+const ACCENT_PIN='#24407c';
 function labelIcon(txt,bg){ return L.divIcon({className:'',html:`<div class="zlabel" style="background:${bg||'rgba(255,255,255,.92)'}">${txt}</div>`,iconSize:[10,10]}); }
 
 function buildStaticMarkers(){
-  MATSURI.forEach(p=>{ const mk=L.marker([p.lat,p.lng],{icon:divPin(getComputedStyle(document.documentElement).getPropertyValue('--accent')||'#f0512f',p.emoji)}); mk.on('click',()=>openSpot(p,'matsuri')); mLayers.matsuri.addLayer(mk); });
+  MATSURI.forEach(p=>{ const mk=L.marker([p.lat,p.lng],{icon:divPin(ACCENT_PIN,p.emoji)}); mk.on('click',()=>openSpot(p,'matsuri')); mLayers.matsuri.addLayer(mk); });
   YATAI.forEach(p=>{
     const poly=L.polygon(p.poly,{color:p.color,fillColor:p.color,fillOpacity:.28,weight:2});
     poly.on('click',()=>openYatai(p)); mLayers.yatai.addLayer(poly);
@@ -710,7 +766,7 @@ function openSpot(p){
 function openYatai(p){
   openSheet(`🍢 ${p.name}`,
    `<div class="card"><span class="badge" style="background:${p.color};color:#111">${p.level}</span><p style="margin-top:9px">${p.info}</p>
-     <p style="margin-top:6px;font-size:.74rem;color:var(--muted)">※ 色塊為<b>示意範圍</b>（非精確測繪），實際攤位以現場為準。</p></div>
+     <p style="margin-top:6px;font-size:.78rem;color:var(--muted)">※ 色塊為<b>示意範圍</b>（非精確測繪），實際攤位以現場為準。</p></div>
     <div class="hero" style="padding:0;border:none;background:none;margin:0"><div class="acts">
       <button class="bigbtn primary" onclick="navTo(${p.lat},${p.lng},'${p.name.replace(/'/g,'')}','yt-${p.id}')">🧭 帶我去這裡</button>
       ${checkinBtnInline('yt-'+p.id)}</div></div>`);
@@ -788,6 +844,7 @@ function navTo(lat,lng,name,checkinId){
   totalMin=Math.max(totalMin,1);
   drawNav(pts,{lat,lng},name);
   navSession={toName:name,toLat:lat,toLng:lng,checkinId,totalMin};
+  if(gpsLatLng)followMode=true;
   showNavBanner();
   openNavSheet(steps,name,totalMin,startNodeId,checkinId);
 }
@@ -808,7 +865,7 @@ function openNavSheet(steps,name,totalMin,startNodeId,checkinId){
    `<div class="navtot"><div class="big">約 ${totalMin} 分</div><div class="sub">🚶 推薦步行路線（祭典特化 · 已避開管制站）</div></div>
     ${gpsLatLng?'':`<div class="origin-sel">📍 你現在在：<select id="originSel">${originOptions}</select></div>`}
     <div class="card"><h4>逐段指引</h4>${stepHtml}</div>
-    <p style="font-size:.74rem;color:var(--muted);text-align:center">藍線已畫在地圖上。${gpsLatLng?'抵達目的地 60m 內會自動打卡 ✓':'開啟定位（左下 📍）可即時顯示剩餘距離與自動打卡。'}</p>`);
+    <p style="font-size:.78rem;color:var(--muted);text-align:center">藍線已畫在地圖上。${gpsLatLng?'抵達目的地 60m 內會自動打卡 ✓':'開啟定位（左下 📍）可即時顯示剩餘距離與自動打卡。'}</p>`);
   const sel=document.getElementById('originSel');
   if(sel)sel.onchange=()=>{ manualOrigin=sel.value; navTo(navSession.toLat,navSession.toLng,navSession.toName,navSession.checkinId); };
 }
@@ -819,8 +876,9 @@ function showNavBanner(){
   b.innerHTML=`<span class="ar">${ICONS.navarrow}</span><div class="mid"><div class="to">往 ${navSession.toName}</div><div class="meta">${meta}</div></div><button class="stop" id="navStop">結束</button>`;
   b.classList.remove('hidden');
   document.getElementById('navStop').onclick=stopNav;
+  b.querySelector('.mid').onclick=()=>{ if(gpsLatLng&&map){ followMode=true; map.panTo([gpsLatLng.lat,gpsLatLng.lng],{animate:true}); } };
 }
-function stopNav(){ navSession=null; if(navLayer)navLayer.clearLayers(); document.getElementById('navBanner').classList.add('hidden'); }
+function stopNav(){ navSession=null; followMode=false; if(navLayer)navLayer.clearLayers(); document.getElementById('navBanner').classList.add('hidden'); }
 function navArrivalCheck(){
   if(!navSession||!gpsLatLng)return;
   const d=distM(gpsLatLng,{lat:navSession.toLat,lng:navSession.toLng});
@@ -885,7 +943,9 @@ function hanabiCountdownHtml(){
     sub='距 7/25 19:30 奉納花火開始';
   } else if(t<=end){ big='🎆 花火進行中！'; sub='19:30–20:50 · 頭頂近景，別移動'; }
   else { big='今年花火已結束 🎆'; sub='散場請往京橋，勿衝桜ノ宮駅'; }
-  return `<div class="navtot" style="background:linear-gradient(135deg,rgba(168,85,247,.14),rgba(255,255,255,.40));border-color:rgba(168,85,247,.45)"><div class="big">${big}</div><div class="sub" style="color:#7c3aed">${sub}</div></div>`;
+  const dk=appliedTheme==='dark';
+  const st=dk?'background:linear-gradient(135deg,#3a1d4d,#231a3a);border-color:#a855f7':'background:linear-gradient(135deg,rgba(168,85,247,.14),rgba(255,255,255,.40));border-color:rgba(168,85,247,.45)';
+  return `<div class="navtot" style="${st}"><div class="big">${big}</div><div class="sub" style="color:${dk?'#d8bff2':'#7c3aed'}">${sub}</div></div>`;
 }
 
 /* ---------- 屋台美食制覇 ---------- */
@@ -968,6 +1028,18 @@ function updateTaskBar(){
   const idx=currentRouteIndex();
   if(idx<0){ tx.textContent=isFestDay(d)?'祭典行程尚未開始':'非祭典日 — ⋯選單可模擬時間'; const nx=nextRoutePoint(); cd.textContent=nx?`${toMin(nx.t)-f.hm}分後`:''; }
   else { const cur=ROUTE[idx]; tx.textContent=cur.title; const nx=nextRoutePoint(); cd.textContent=nx?`${toMin(nx.t)-f.hm}分後`:'🎆'; }
+  checkReminders();
+}
+
+/* ---------- 行程時間提醒（開著 app 時 toast + 震動） ---------- */
+const remindFired={};
+function vib(){ try{ if(navigator.vibrate)navigator.vibrate([200,100,200]); }catch(e){} }
+function checkReminders(){
+  const f=festClock(now()); if(!isFestDayF(f))return;
+  const nx=nextRoutePoint();
+  if(nx){ const dm=toMin(nx.t)-f.hm; if(dm>0&&dm<=10&&!remindFired[nx.id+'@pre']){ remindFired[nx.id+'@pre']=1; toast('⏰',`${dm} 分鐘後：${nx.title}`); vib(); } }
+  const idx=currentRouteIndex();
+  if(idx>=0){ const cur=ROUTE[idx]; const dm=f.hm-toMin(cur.t); if(dm>=0&&dm<=1&&!remindFired[cur.id+'@now']){ remindFired[cur.id+'@now']=1; toast('🔔',`現在：${cur.title}`); vib(); } }
 }
 
 /* =====================================================================
@@ -976,7 +1048,7 @@ function updateTaskBar(){
 function inAppBrowser(){ const ua=navigator.userAgent||''; return window.self!==window.top||/FBAN|FBAV|Instagram|Line|MicroMessenger|Twitter|KAKAOTALK|snapchat/i.test(ua); }
 function toggleGps(){
   const btn=document.getElementById('fabGps');
-  if(gpsWatch){ navigator.geolocation.clearWatch(gpsWatch); gpsWatch=null; btn.classList.remove('active'); if(gpsMarker&&map)map.removeLayer(gpsMarker); gpsMarker=null; gpsLatLng=null; gpsCentered=false; toast('📍','已關閉定位'); return; }
+  if(gpsWatch){ navigator.geolocation.clearWatch(gpsWatch); gpsWatch=null; btn.classList.remove('active'); if(gpsMarker&&map)map.removeLayer(gpsMarker); gpsMarker=null; gpsLatLng=null; gpsCentered=false; followMode=false; stopHeading(); toast('📍','已關閉定位'); return; }
   if(!navigator.geolocation){ toast('⚠️','此裝置不支援定位，可手動打卡'); return; }
   if(!window.isSecureContext){ gpsHelp('insecure'); return; }
   // Chrome 對曾拒絕過的網站會「靜默封鎖」不再跳詢問視窗 — 先查權限狀態直接給解法
@@ -986,6 +1058,7 @@ function toggleGps(){
     }).catch(()=>{});
   }
   btn.classList.add('active'); toast('📡','定位中…請允許位置權限');
+  startHeading();
   navigator.geolocation.getCurrentPosition(pos=>{ gpsLatLng={lat:pos.coords.latitude,lng:pos.coords.longitude}; placeGps(); startWatch(); },err=>{ btn.classList.remove('active'); gpsError(err); },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
 function startWatch(){ gpsWatch=navigator.geolocation.watchPosition(pos=>{ gpsLatLng={lat:pos.coords.latitude,lng:pos.coords.longitude}; placeGps(); },()=>{},{enableHighAccuracy:true,maximumAge:5000,timeout:20000}); }
@@ -1005,11 +1078,37 @@ function gpsHelp(kind){
 function placeGps(){
   if(!gpsLatLng)return;
   if(map){
-    if(!gpsMarker)gpsMarker=L.marker([gpsLatLng.lat,gpsLatLng.lng],{icon:L.divIcon({className:'',html:'<div class="gps-dot"></div>',iconSize:[18,18],iconAnchor:[9,9]}),zIndexOffset:2000}).addTo(map);
+    if(!gpsMarker)gpsMarker=L.marker([gpsLatLng.lat,gpsLatLng.lng],{icon:L.divIcon({className:'',html:'<div class="gps-wrap"><div class="gps-cone"></div><div class="gps-dot"></div></div>',iconSize:[56,56],iconAnchor:[28,28]}),zIndexOffset:2000}).addTo(map);
     else gpsMarker.setLatLng([gpsLatLng.lat,gpsLatLng.lng]);
     if(!gpsCentered&&!navSession){ gpsCentered=true; const d=distM(gpsLatLng,FEST_CENTER); if(d<5000){ map.setView([gpsLatLng.lat,gpsLatLng.lng],16); toast('📍','已定位到你的位置'); } else { map.setView([FEST_CENTER.lat,FEST_CENTER.lng],14); toast('📍','你距會場約 '+Math.round(d/1000)+' km'); } }
+    else if(followMode&&navSession&&!fallbackMode)map.panTo([gpsLatLng.lat,gpsLatLng.lng],{animate:true,duration:.5});
   }
   autoCheckinNearby(); navArrivalCheck();
+}
+
+/* ---------- 指北：藍點方向扇形（羅盤） ---------- */
+let headingOn=false;
+function onHeading(e){
+  let h=null;
+  if(typeof e.webkitCompassHeading==='number')h=e.webkitCompassHeading;           // iOS
+  else if(e.absolute&&typeof e.alpha==='number')h=(360-e.alpha)%360;              // Android（絕對方位）
+  if(h===null)return;
+  const el=document.querySelector('.gps-cone');
+  if(el){ el.classList.add('on'); el.style.transform=`rotate(${Math.round(h)}deg)`; }
+}
+function startHeading(){
+  if(headingOn||!window.DeviceOrientationEvent)return; headingOn=true;
+  if(typeof DeviceOrientationEvent.requestPermission==='function'){               // iOS 13+ 需在手勢中請求
+    DeviceOrientationEvent.requestPermission().then(s=>{ if(s==='granted')window.addEventListener('deviceorientation',onHeading,true); }).catch(()=>{});
+  } else {
+    window.addEventListener('deviceorientationabsolute',onHeading,true);
+    window.addEventListener('deviceorientation',onHeading,true);
+  }
+}
+function stopHeading(){
+  if(!headingOn)return; headingOn=false;
+  window.removeEventListener('deviceorientation',onHeading,true);
+  window.removeEventListener('deviceorientationabsolute',onHeading,true);
 }
 function autoCheckinNearby(){ if(!gpsLatLng)return; ROUTE.forEach(r=>{ if(!isChecked(r.id)&&distM(gpsLatLng,{lat:r.lat,lng:r.lng})<=100){ setCheck(r.id,true); toast('✓','自動打卡：'+r.title); checkAchievements(); rebuildRoute(); updateAchvBadge(); } }); }
 
@@ -1024,7 +1123,7 @@ function openAchv(){
   openSheet('🏅 御朱印集章',
    `<div class="progwrap"><div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:1.05rem">已收集 ${got}/${tot}</b><span style="color:var(--gold);font-weight:800">${pct}%</span></div><div class="progbar"><div class="fill" style="width:${pct}%"></div></div></div>
     <div class="achv-grid">${ACHV.map(a=>{ const g=achvGot(a); return `<div class="achv ${g?'got':''}"><div class="emoji">${a.emoji}</div><div class="an">${a.name}</div><div class="ad">${a.desc}</div><div class="ad" style="color:${g?'var(--gold)':'var(--muted)'};font-weight:800;margin-top:4px">${g?'✓ 已達成':'未達成'}</div></div>`; }).join('')}</div>
-    <p style="font-size:.74rem;color:var(--muted);margin-top:12px;text-align:center">行程點與情報點皆可打卡（GPS 100m 內自動、或手動）。進度存於本機。</p>`);
+    <p style="font-size:.78rem;color:var(--muted);margin-top:12px;text-align:center">行程點與情報點皆可打卡（GPS 100m 內自動、或手動）。進度存於本機。</p>`);
 }
 function openRemind(){
   openSheet('🎒 出門清單',
@@ -1034,6 +1133,7 @@ function openRemind(){
 function openMenu(){
   openSheet('⋯ 更多',
    `<div class="menu-item" id="mInstall"><span class="mi">📲</span>加到主畫面（App 模式）<span class="ch">›</span></div>
+    <div class="menu-item" id="mOffline"><span class="mi">🗺️</span>下載離線地圖（出發前必按）<span class="ch">›</span></div>
     <div class="menu-item" id="mSim"><span class="mi">🕒</span>時間預覽（模擬祭典時刻）<span class="ch">›</span></div>
     <div class="menu-item" id="mRemind"><span class="mi">🎒</span>出門清單<span class="ch">›</span></div>
     <div class="menu-item" id="mAchv"><span class="mi">🏅</span>御朱印集章<span class="ch">›</span></div>
@@ -1042,6 +1142,7 @@ function openMenu(){
     <div class="menu-item" id="mHelp"><span class="mi">❓</span>使用說明<span class="ch">›</span></div>
     <div class="menu-item" id="mReset"><span class="mi" style="color:var(--red)">🗑️</span><span style="color:var(--red)">重置所有打卡紀錄</span></div>`);
   document.getElementById('mInstall').onclick=openInstall;
+  document.getElementById('mOffline').onclick=openOfflineMap;
   document.getElementById('mSim').onclick=openSim;
   document.getElementById('mRemind').onclick=openRemind;
   document.getElementById('mAchv').onclick=openAchv;
@@ -1065,6 +1166,45 @@ function openHelp(){
      <li>💡 <b>冷知識</b>：⋯ 選單或點主要據點可翻天神祭雜學</li>
      <li>🏅 <b>御朱印集章</b>：打卡行程/花火/屋台自動收集徽章</li></ul></div>
     <div class="card"><h4>🕒 現在不是祭典日？</h4><p>今天若非 7/24–7/25，右上 ⋯ →「時間預覽」可跳到祭典時刻，體驗熱區變色、推薦、散場提醒、花火倒數等隨時間變化的功能。</p></div>`);
+}
+
+/* ---------- 離線地圖：預先下載祭典區域圖磚（淺色＋深色 z13–17） ---------- */
+const OFF_KEY='tenjinOfflineAt';
+const OFF_BBOX={minLat:34.684,maxLat:34.712,minLng:135.496,maxLng:135.538}; // 淀屋橋～京橋～桜ノ宮
+const TILE_CACHE_NAME='tenjin-tiles-v1';
+let offRunning=false,offCancel=false;
+function lng2x(lng,z){ return Math.floor((lng+180)/360*Math.pow(2,z)); }
+function lat2y(lat,z){ const r=lat*Math.PI/180; return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z)); }
+function offlineTileUrls(){
+  const urls=[],subs=['a','b','c','d'],r=(L.Browser&&L.Browser.retina)?'@2x':''; let si=0;
+  [13,14,15,16,17].forEach(z=>{
+    const x0=lng2x(OFF_BBOX.minLng,z),x1=lng2x(OFF_BBOX.maxLng,z);
+    const y0=lat2y(OFF_BBOX.maxLat,z),y1=lat2y(OFF_BBOX.minLat,z);
+    for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++)
+      [TILE_STYLES.light,TILE_STYLES.dark].forEach(stl=>urls.push(`https://${subs[si++%4]}.basemaps.cartocdn.com/${stl}/${z}/${x}/${y}${r}.png`));
+  });
+  return urls;
+}
+async function downloadOffline(){
+  if(offRunning)return; offRunning=true; offCancel=false;
+  const urls=offlineTileUrls(); let done=0,fail=0;
+  const bar=document.getElementById('offFill'),lbl=document.getElementById('offLbl'),btn=document.getElementById('offGo');
+  if(btn){btn.textContent='⏸ 取消下載';btn.onclick=()=>{offCancel=true;};}
+  const cache=await caches.open(TILE_CACHE_NAME);
+  const upd=()=>{ if(bar)bar.style.width=Math.round((done+fail)/urls.length*100)+'%'; if(lbl)lbl.textContent=offCancel?'已取消':`下載中 ${done+fail}/${urls.length}（失敗 ${fail}）`; };
+  const worker=async()=>{ while(urls.length&&!offCancel){ const u=urls.shift(); try{ if(!await cache.match(u)){ const resp=await fetch(u,{mode:'cors'}); if(resp.ok)await cache.put(u,resp); else fail++; done++; } else done++; }catch(e){ fail++; } upd(); } };
+  await Promise.all([0,1,2,3,4,5,6,7].map(worker));
+  offRunning=false;
+  if(!offCancel){ try{localStorage.setItem(OFF_KEY,String(Date.now()));}catch(e){} toast('🗺️','離線地圖下載完成！現場沒網路也能看地圖'); openOfflineMap(); }
+}
+function openOfflineMap(){
+  const at=parseInt(localStorage.getItem(OFF_KEY)||'0',10);
+  const status=at?`✅ 已於 ${new Date(at).getMonth()+1}/${new Date(at).getDate()} 下載完成`:'尚未下載';
+  openSheet('🗺️ 離線地圖',
+   `<div class="card" style="border-color:var(--gold)"><h4>為什麼要先下載</h4><p style="color:var(--text)">祭典當天百萬人擠爆基地台，地圖圖磚常載不出來。<b>出發前在飯店 Wi-Fi 按一次</b>，把會場一帶（淀屋橋～京橋～桜ノ宮）的日夜兩套地圖存進手機，現場斷網照樣能看。</p></div>
+    <div class="progwrap"><div style="display:flex;justify-content:space-between;align-items:baseline"><b>${status}</b></div><div class="progbar"><div class="fill" id="offFill" style="width:${at?100:0}%"></div></div><p id="offLbl" style="font-size:.78rem;color:var(--muted);margin-top:6px">約 500 張圖磚 · 10–20 MB · 建議在 Wi-Fi 下進行</p></div>
+    <button class="bigbtn primary" id="offGo" style="width:100%">${at?'🔄 重新下載':'⬇️ 開始下載'}</button>`);
+  document.getElementById('offGo').onclick=downloadOffline;
 }
 
 /* ---------- 加到主畫面（PWA 安裝） ---------- */
@@ -1122,7 +1262,7 @@ function openSim(){
 }
 function setSim(day,h,m){ simOffset=new Date(FEST_YEAR,6,day,h,m,0).getTime(); onTimeChanged(); }
 function setSimLive(){ simOffset=null; bannerDismissed=false; onTimeChanged(); }
-function onTimeChanged(){ const f=festClock(now()); if(isFestDayF(f)){ routeDay=f.day; } updateTaskBar(); rebuildCrowd(); rebuildRoute(); checkAlertBanner(); if(fallbackMode)renderFallback(); }
+function onTimeChanged(){ const f=festClock(now()); if(isFestDayF(f)){ routeDay=f.day; } applyTheme(); updateTaskBar(); rebuildCrowd(); rebuildRoute(); checkAlertBanner(); if(fallbackMode)renderFallback(); }
 
 /* =====================================================================
    Fallback 文字模式
@@ -1148,19 +1288,21 @@ function checkAchievements(){ if(!store.achv)store.achv={}; ACHV.forEach(a=>{ if
    綁定 & 啟動
    ===================================================================== */
 document.getElementById('fabGps').onclick=toggleGps;
+document.getElementById('btnTheme').onclick=cycleTheme;
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
 document.getElementById('btnAchv').onclick=openAchv;
 document.getElementById('btnMenu').onclick=openMenu;
 document.getElementById('fbRetry').onclick=()=>{ exitFallback(); if(tileLayer)tileLayer.redraw(); };
 
 (function(){ const f=festClock(now()); routeDay=(f.mo===7&&f.day===25)?25:24; })();
+applyTheme(); updateThemeBtn();
 buildTabbar();
 initMap();
 updateTaskBar();
 updateAchvBadge();
 checkAlertBanner();
 
-setInterval(()=>{ updateTaskBar(); if(navSession)showNavBanner(); },15000);
+setInterval(()=>{ applyTheme(); updateTaskBar(); if(navSession)showNavBanner(); },15000);
 setInterval(()=>{ if(!simOffset){ rebuildCrowd(); rebuildRoute(); checkAlertBanner(); if(fallbackMode)renderFallback(); } },60000);
 
 setTimeout(()=>{ if(!localStorage.getItem(LS_KEY+'_seen')){ toast('⛩️','歡迎！下方 5 分頁切換情報，任何據點按「帶我去」就會畫出推薦路線'); localStorage.setItem(LS_KEY+'_seen','1'); } },1400);

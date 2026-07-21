@@ -1,13 +1,13 @@
 /* 天神祭導航 service worker：快取 app shell + Leaflet + 地圖圖磚（現場網路壅塞時仍可用） */
 "use strict";
-const VER = 'tenjin-sw-v1';
-const TILE_CACHE = VER + '-tiles';
+const VER = 'tenjin-sw-v2';
+const TILE_CACHE = 'tenjin-tiles-v1'; // 與頁面「下載離線地圖」共用，獨立於 VER 不隨版本清除
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  './leaflet/leaflet.css',
+  './leaflet/leaflet.js',
 ];
 
 self.addEventListener('install', e => {
@@ -21,7 +21,7 @@ self.addEventListener('activate', e => {
   );
 });
 
-const TILE_MAX = 400; // 圖磚快取上限（張）
+const TILE_MAX = 1200; // 圖磚快取上限（張）：離線包約 500 張 + 日常瀏覽餘裕
 async function trimTiles(cache) {
   const keys = await cache.keys();
   for (let i = 0; i < keys.length - TILE_MAX; i++) await cache.delete(keys[i]);
@@ -44,22 +44,22 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // 地圖圖磚：快取優先，逛過的區域離線也能顯示
+  // 地圖圖磚：快取優先（含預下載的離線包），逛過的區域離線也能顯示
   if (url.hostname.endsWith('basemaps.cartocdn.com')) {
     e.respondWith(caches.open(TILE_CACHE).then(async c => {
-      const hit = await c.match(req);
+      const hit = await c.match(req, { ignoreVary: true });
       if (hit) return hit;
       const r = await fetch(req);
-      if (r.ok || r.type === 'opaque') { c.put(req, r.clone()); trimTiles(c); }
+      if (r.ok) { c.put(req, r.clone()); trimTiles(c); }
       return r;
     }));
     return;
   }
 
-  // 其餘（Leaflet 等靜態資源）：快取優先
+  // 其餘靜態資源：快取優先
   e.respondWith(
     caches.match(req).then(hit => hit || fetch(req).then(r => {
-      if (url.hostname === 'unpkg.com' && r.ok) {
+      if (url.origin === location.origin && r.ok) {
         const cp = r.clone();
         caches.open(VER).then(c => c.put(req, cp));
       }
