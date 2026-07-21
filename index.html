@@ -312,7 +312,7 @@ html.dark .tab.on::before{box-shadow:0 0 10px rgba(255,194,77,.6)}
 
 <!-- FALLBACK -->
 <div id="fallback" class="hidden"><div class="fb-inner">
-  <div class="fb-note">📡 地圖圖磚載入失敗（現場網路壅塞）— 已切換為<b>文字情報模式</b>。<button id="fbRetry" style="margin-left:6px;color:var(--gold);text-decoration:underline">重試地圖</button></div>
+  <div class="fb-note">📡 地圖圖磚暫時載入失敗 — 已切換為<b>文字情報模式</b>，所有情報照常可用。<button id="fbRetry" style="margin-left:6px;color:var(--gold);text-decoration:underline">重試地圖</button></div>
   <div id="fbContent"></div>
 </div></div>
 
@@ -388,6 +388,7 @@ function applyTheme(){
   document.documentElement.classList.toggle('dark',t==='dark');
   const m=document.querySelector('meta[name=theme-color]'); if(m)m.content=t==='dark'?'#0b0a0f':'#f2f1f6';
   if(typeof tileLayer!=='undefined'&&tileLayer)tileLayer.setUrl(tileUrl(TILE_STYLES[t]));
+  if(typeof mLayers!=='undefined'&&mLayers.matsuri)buildMatsuriMarkers();
 }
 function updateThemeBtn(){ const el=document.getElementById('themeIc'); if(el)el.textContent=themeMode==='auto'?'🌗':themeMode==='light'?'☀️':'🌙'; }
 function cycleTheme(){
@@ -665,11 +666,15 @@ function enterFallback(){ if(fallbackMode)return; fallbackMode=true; document.ge
 function exitFallback(){ fallbackMode=false; document.getElementById('fallback').classList.add('hidden'); if(map)setTimeout(()=>map.invalidateSize(),120); }
 
 function divPin(color,emoji,size){ size=size||26; return L.divIcon({className:'',html:`<div class="pin" style="background:${color};width:${size}px;height:${size}px"><span>${emoji}</span></div>`,iconSize:[size,size],iconAnchor:[size/2,size],popupAnchor:[0,-size]}); }
-const ACCENT_PIN='#24407c';
+function accentPin(){ return appliedTheme==='dark'?'#5f83cf':'#24407c'; } // 深色地圖用亮一階的藏青，才看得見
 function labelIcon(txt,bg){ return L.divIcon({className:'',html:`<div class="zlabel" style="background:${bg||'rgba(255,255,255,.92)'}">${txt}</div>`,iconSize:[10,10]}); }
 
+function buildMatsuriMarkers(){
+  if(!mLayers.matsuri)return; mLayers.matsuri.clearLayers();
+  MATSURI.forEach(p=>{ const mk=L.marker([p.lat,p.lng],{icon:divPin(accentPin(),p.emoji)}); mk.on('click',()=>openSpot(p,'matsuri')); mLayers.matsuri.addLayer(mk); });
+}
 function buildStaticMarkers(){
-  MATSURI.forEach(p=>{ const mk=L.marker([p.lat,p.lng],{icon:divPin(ACCENT_PIN,p.emoji)}); mk.on('click',()=>openSpot(p,'matsuri')); mLayers.matsuri.addLayer(mk); });
+  buildMatsuriMarkers();
   YATAI.forEach(p=>{
     const poly=L.polygon(p.poly,{color:p.color,fillColor:p.color,fillOpacity:.28,weight:2});
     poly.on('click',()=>openYatai(p)); mLayers.yatai.addLayer(poly);
