@@ -1187,6 +1187,7 @@ function offlineTileUrls(){
   return urls;
 }
 async function downloadOffline(){
+  if(!window.caches){ toast('⚠️','此開啟方式不支援離線儲存 — 請用 https 網站網址開啟'); return; }
   if(offRunning)return; offRunning=true; offCancel=false;
   const urls=offlineTileUrls(); let done=0,fail=0;
   const bar=document.getElementById('offFill'),lbl=document.getElementById('offLbl'),btn=document.getElementById('offGo');
@@ -1199,6 +1200,7 @@ async function downloadOffline(){
   if(!offCancel){ try{localStorage.setItem(OFF_KEY,String(Date.now()));}catch(e){} toast('🗺️','離線地圖下載完成！現場沒網路也能看地圖'); openOfflineMap(); }
 }
 function openOfflineMap(){
+  if(!window.caches){ openSheet('🗺️ 離線地圖',`<div class="card" style="border-color:var(--red)"><h4>⚠️ 此開啟方式不支援離線地圖</h4><p style="color:var(--text)">你目前是以「本機檔案」開啟本頁（網址不是 https）。瀏覽器在這種模式下會停用離線儲存、定位、加到主畫面等功能。<b>請改用 GitHub Pages 的 https 網址開啟</b>，一切就能正常運作。</p></div>`); return; }
   const at=parseInt(localStorage.getItem(OFF_KEY)||'0',10);
   const status=at?`✅ 已於 ${new Date(at).getMonth()+1}/${new Date(at).getDate()} 下載完成`:'尚未下載';
   openSheet('🗺️ 離線地圖',
@@ -1307,6 +1309,13 @@ setInterval(()=>{ applyTheme(); updateTaskBar(); if(navSession)showNavBanner(); 
 setInterval(()=>{ if(!simOffset){ rebuildCrowd(); rebuildRoute(); checkAlertBanner(); if(fallbackMode)renderFallback(); } },60000);
 
 setTimeout(()=>{ if(!localStorage.getItem(LS_KEY+'_seen')){ toast('⛩️','歡迎！下方 5 分頁切換情報，任何據點按「帶我去」就會畫出推薦路線'); localStorage.setItem(LS_KEY+'_seen','1'); } },1400);
+
+// 以本機檔案（file:// / content://）開啟時，多數功能會被瀏覽器停用 — 明確提示改用網站網址
+if(location.protocol!=='http:'&&location.protocol!=='https:'){
+  setTimeout(()=>{ openSheet('⚠️ 請用網站網址開啟',
+   `<div class="card" style="border-color:var(--red)"><h4>目前是以「本機檔案」方式開啟</h4><p style="color:var(--text)">從檔案管理器直接開 HTML 檔時，瀏覽器會停用<b>地圖圖磚、離線下載、GPS 定位、加到主畫面</b>等功能，畫面就會像現在這樣一片空白。</p></div>
+    <div class="card" style="border-color:var(--green)"><h4>✅ 正確開法</h4><p style="color:var(--text)">在瀏覽器網址列輸入你的 GitHub Pages 網址（<b>https://…github.io/…</b>）開啟本頁，地圖、離線、定位、安裝就全部正常。之後再從那個頁面「加到主畫面」。</p></div>`); },900);
+}
 
 // 導出給 inline onclick 使用
 window.navTo=navTo;
