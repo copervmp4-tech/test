@@ -1078,8 +1078,8 @@ function openInstall(){
   let html='';
   if(inapp) html+=`<div class="card" style="border-color:var(--red)"><h4>⚠️ 你在 App 內建瀏覽器中</h4><p style="color:var(--text)">LINE／IG／FB 內開的網頁無法加到主畫面。請先點右上「⋯」→「用 Safari / Chrome 開啟」再回到這裡。</p></div>`;
   if(deferredInstall) html+=`<div class="hero"><div class="kick">一鍵安裝</div><div class="title">把祭典導航裝到桌面</div><div class="why">全螢幕開啟、桌面圖示直達；程式與地圖會離線快取，祭典現場網路塞爆也能用。</div><div class="acts"><button class="bigbtn primary" id="pwaGo">📲 立即安裝</button></div></div>`;
-  html+=`<div class="card"><h4>🍎 iPhone / iPad（Safari）</h4><ul><li><b>1.</b> 底部中間 <b>分享</b> 按鈕（□↑）</li><li><b>2.</b> 往下捲，點「<b>加入主畫面</b>」</li><li><b>3.</b> 右上「加入」— 桌面出現 ⛩️ 圖示</li></ul></div>
-    <div class="card"><h4>🤖 Android（Chrome）</h4><ul><li><b>1.</b> 右上「<b>⋮</b>」選單</li><li><b>2.</b> 點「<b>加到主畫面</b>」或「<b>安裝應用程式</b>」</li><li><b>3.</b> 確認 — 桌面出現 ⛩️ 圖示</li></ul></div>
+  html+=`<div class="card"><h4>🍎 iPhone / iPad（Safari）</h4><ul><li><b>1.</b> 底部中間 <b>分享</b> 按鈕（□↑）</li><li><b>2.</b> 往下捲，點「<b>加入主畫面</b>」</li><li><b>3.</b> 右上「加入」— 桌面出現天神祭圖示</li></ul></div>
+    <div class="card"><h4>🤖 Android（Chrome）</h4><ul><li><b>1.</b> 右上「<b>⋮</b>」選單</li><li><b>2.</b> 點「<b>加到主畫面</b>」或「<b>安裝應用程式</b>」</li><li><b>3.</b> 確認 — 桌面出現天神祭圖示</li></ul></div>
     <div class="card"><h4>裝了有什麼好處</h4><ul><li>全螢幕、無網址列，像原生 App</li><li>程式本體＋看過的地圖離線快取（現場網路壅塞救星）</li><li>祭典當天從桌面一鍵開啟</li></ul></div>`;
   openSheet('📲 加到主畫面',html);
   const go=document.getElementById('pwaGo');
