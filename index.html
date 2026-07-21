@@ -378,7 +378,7 @@ function hm2str(h){return pad(Math.floor(h/60))+':'+pad(h%60)}
 function toMin(s){const [h,m]=s.split(':').map(Number);return h*60+m}
 
 /* ---------- 外觀主題（自動：19:00–06:00 深色；地圖圖磚跟著換） ---------- */
-const TILE_STYLES={light:'rastertiles/voyager',dark:'dark_all'};
+const TILE_STYLES={light:'rastertiles/voyager',dark:'rastertiles/dark_all'};
 function tileUrl(style){ return 'https://{s}.basemaps.cartocdn.com/'+style+'/{z}/{x}/{y}{r}.png'; }
 let themeMode=localStorage.getItem('tenjinTheme')||'auto';
 let appliedTheme=null;
@@ -1176,12 +1176,13 @@ let offRunning=false,offCancel=false;
 function lng2x(lng,z){ return Math.floor((lng+180)/360*Math.pow(2,z)); }
 function lat2y(lat,z){ const r=lat*Math.PI/180; return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z)); }
 function offlineTileUrls(){
-  const urls=[],subs=['a','b','c','d'],r=(L.Browser&&L.Browser.retina)?'@2x':''; let si=0;
+  // 一律用 a. 子網域當快取鍵；service worker 會把 b/c/d 的請求正規化成 a. 再比對
+  const urls=[],r=(L.Browser&&L.Browser.retina)?'@2x':'';
   [13,14,15,16,17].forEach(z=>{
     const x0=lng2x(OFF_BBOX.minLng,z),x1=lng2x(OFF_BBOX.maxLng,z);
     const y0=lat2y(OFF_BBOX.maxLat,z),y1=lat2y(OFF_BBOX.minLat,z);
     for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++)
-      [TILE_STYLES.light,TILE_STYLES.dark].forEach(stl=>urls.push(`https://${subs[si++%4]}.basemaps.cartocdn.com/${stl}/${z}/${x}/${y}${r}.png`));
+      [TILE_STYLES.light,TILE_STYLES.dark].forEach(stl=>urls.push(`https://a.basemaps.cartocdn.com/${stl}/${z}/${x}/${y}${r}.png`));
   });
   return urls;
 }

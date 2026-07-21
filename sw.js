@@ -1,6 +1,6 @@
 /* 天神祭導航 service worker：快取 app shell + Leaflet + 地圖圖磚（現場網路壅塞時仍可用） */
 "use strict";
-const VER = 'tenjin-sw-v2';
+const VER = 'tenjin-sw-v3';
 const TILE_CACHE = 'tenjin-tiles-v1'; // 與頁面「下載離線地圖」共用，獨立於 VER 不隨版本清除
 const SHELL = [
   './',
@@ -45,12 +45,14 @@ self.addEventListener('fetch', e => {
   }
 
   // 地圖圖磚：快取優先（含預下載的離線包），逛過的區域離線也能顯示
+  // Leaflet 會輪替 a/b/c/d 子網域，快取鍵一律正規化成 a. 才能對上離線包
   if (url.hostname.endsWith('basemaps.cartocdn.com')) {
+    const key = req.url.replace(/^https:\/\/[a-d]\./, 'https://a.');
     e.respondWith(caches.open(TILE_CACHE).then(async c => {
-      const hit = await c.match(req, { ignoreVary: true });
+      const hit = await c.match(key, { ignoreVary: true });
       if (hit) return hit;
       const r = await fetch(req);
-      if (r.ok) { c.put(req, r.clone()); trimTiles(c); }
+      if (r.ok) { c.put(key, r.clone()); trimTiles(c); }
       return r;
     }));
     return;
